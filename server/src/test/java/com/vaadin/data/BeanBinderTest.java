@@ -1,9 +1,12 @@
 package com.vaadin.data;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -13,7 +16,6 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.NotEmpty;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,6 +26,7 @@ import com.vaadin.tests.data.bean.BeanToValidate;
 import com.vaadin.ui.CheckBoxGroup;
 import com.vaadin.ui.TextField;
 
+@SuppressWarnings("unused")
 public class BeanBinderTest
         extends BinderTestBase<Binder<BeanToValidate>, BeanToValidate> {
 
@@ -33,6 +36,9 @@ public class BeanBinderTest
     private class TestClass {
         private CheckBoxGroup<TestEnum> enums;
         private TextField number = new TextField();
+    }
+
+    private class TestClassWithoutFields {
     }
 
     private static class TestBean implements Serializable {
@@ -145,6 +151,22 @@ public class BeanBinderTest
         }
     }
 
+    public static class Person {
+        LocalDate mydate;
+
+        public LocalDate getMydate() {
+            return mydate;
+        }
+
+        public void setMydate(LocalDate mydate) {
+            this.mydate = mydate;
+        }
+    }
+
+    public static class PersonForm {
+        private TextField mydate = new TextField();
+    }
+
     @Before
     public void setUp() {
         binder = new BeanValidationBinder<>(BeanToValidate.class);
@@ -192,6 +214,35 @@ public class BeanBinderTest
         // Should throw an IllegalStateException since the binding for number is
         // not completed with bind
         otherBinder.bindInstanceFields(testClass);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void bindInstanceFields_throw_if_no_fields_bound() {
+        Binder<TestBean> otherBinder = new Binder<>(TestBean.class);
+        TestClassWithoutFields testClass = new TestClassWithoutFields();
+
+        // Should throw an IllegalStateException no fields are bound
+        otherBinder.bindInstanceFields(testClass);
+    }
+
+    @Test
+    public void bindInstanceFields_does_not_throw_if_fields_are_bound_manually() {
+        PersonForm form = new PersonForm();
+        Binder<Person> binder = new Binder<>(Person.class);
+        binder.forMemberField(form.mydate)
+                .withConverter(str -> LocalDate.now(), date -> "Hello")
+                .bind("mydate");
+        binder.bindInstanceFields(form);
+
+    }
+
+    @Test
+    public void bindInstanceFields_does_not_throw_if_there_are_incomplete_bindings() {
+        PersonForm form = new PersonForm();
+        Binder<Person> binder = new Binder<>(Person.class);
+        binder.forMemberField(form.mydate).withConverter(str -> LocalDate.now(),
+                date -> "Hello");
+        binder.bindInstanceFields(form);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -257,6 +308,35 @@ public class BeanBinderTest
         nameField.setValue("Foo");
 
         assertEquals(propertyValue, item.getReadOnlyProperty());
+    }
+
+    @Test
+    public void bindReadOnlyPropertyShouldMarkFieldAsReadonly() {
+        binder.bind(nameField, "readOnlyProperty");
+
+        assertTrue("Name field should be readonly", nameField.isReadOnly());
+    }
+
+    @Test
+    public void setReadonlyShouldIgnoreBindingsForReadOnlyProperties() {
+        binder.bind(nameField, "readOnlyProperty");
+
+        binder.setReadOnly(true);
+        assertTrue("Name field should be ignored and be readonly",
+                nameField.isReadOnly());
+
+        binder.setReadOnly(false);
+        assertTrue("Name field should be ignored and be readonly",
+                nameField.isReadOnly());
+
+        nameField.setReadOnly(false);
+        binder.setReadOnly(true);
+        assertFalse("Name field should be ignored and not be readonly",
+                nameField.isReadOnly());
+
+        binder.setReadOnly(false);
+        assertFalse("Name field should be ignored and not be readonly",
+                nameField.isReadOnly());
     }
 
     @Test
@@ -360,7 +440,7 @@ public class BeanBinderTest
         binder.bind(field, "firstname");
         binder.setBean(bean);
 
-        Assert.assertTrue(field.isRequiredIndicatorVisible());
+        assertTrue(field.isRequiredIndicatorVisible());
         testSerialization(binder);
     }
 
@@ -374,7 +454,7 @@ public class BeanBinderTest
         binder.bind(field, "age");
         binder.setBean(bean);
 
-        Assert.assertTrue(field.isRequiredIndicatorVisible());
+        assertTrue(field.isRequiredIndicatorVisible());
         testSerialization(binder);
     }
 
@@ -388,7 +468,7 @@ public class BeanBinderTest
         binder.bind(field, "lastname");
         binder.setBean(bean);
 
-        Assert.assertTrue(field.isRequiredIndicatorVisible());
+        assertTrue(field.isRequiredIndicatorVisible());
         testSerialization(binder);
     }
 
@@ -403,7 +483,7 @@ public class BeanBinderTest
         binder.bind(field, "subfield.name");
         binder.setBean(bean);
 
-        Assert.assertTrue(field.isRequiredIndicatorVisible());
+        assertTrue(field.isRequiredIndicatorVisible());
         testSerialization(binder);
     }
 
@@ -420,7 +500,7 @@ public class BeanBinderTest
         binder.bind(field, "subfield.subsub.value");
         binder.setBean(bean);
 
-        Assert.assertTrue(field.isRequiredIndicatorVisible());
+        assertTrue(field.isRequiredIndicatorVisible());
         testSerialization(binder);
     }
 
@@ -434,9 +514,9 @@ public class BeanBinderTest
         RequiredConstraints bean = new RequiredConstraints();
         bean.setSubfield(new SubConstraint());
         binder.setBean(bean);
-        Assert.assertFalse(binder.validate().isOk());
+        assertFalse(binder.validate().isOk());
         field.setValue("overfive");
-        Assert.assertTrue(binder.validate().isOk());
+        assertTrue(binder.validate().isOk());
     }
 
     @Test
@@ -452,9 +532,9 @@ public class BeanBinderTest
         subfield.setSubsub(new SubSubConstraint());
         binder.setBean(bean);
 
-        Assert.assertFalse(binder.validate().isOk());
+        assertFalse(binder.validate().isOk());
         field.setValue("overtencharacters");
-        Assert.assertTrue(binder.validate().isOk());
+        assertTrue(binder.validate().isOk());
     }
 
     private void assertInvalid(HasValue<?> field, String message) {

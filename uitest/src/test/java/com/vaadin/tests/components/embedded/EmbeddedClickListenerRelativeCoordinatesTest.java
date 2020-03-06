@@ -1,21 +1,5 @@
-/*
- * Copyright 2000-2016 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.tests.components.embedded;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -24,6 +8,8 @@ import com.vaadin.testbench.elements.EmbeddedElement;
 import com.vaadin.testbench.elements.LabelElement;
 import com.vaadin.testbench.parallel.BrowserUtil;
 import com.vaadin.tests.tb3.MultiBrowserTest;
+
+import static org.junit.Assert.assertEquals;
 
 public class EmbeddedClickListenerRelativeCoordinatesTest
         extends MultiBrowserTest {
@@ -41,14 +27,14 @@ public class EmbeddedClickListenerRelativeCoordinatesTest
         clickAt(41, 22);
         checkLocation(41, 22);
 
-        clickAt(0, 0);
-        checkLocation(0, 0);
+        clickAt(1, 1);
+        checkLocation(1, 1);
     }
 
     private void clickAt(int x, int y) {
         EmbeddedElement embedded = $(EmbeddedElement.class).first();
 
-        embedded.click(x, y);
+        embedded.click(getXOffset(embedded, x), getYOffset(embedded, y));
     }
 
     private void checkLocation(int expectedX, int expectedY) {
@@ -58,19 +44,29 @@ public class EmbeddedClickListenerRelativeCoordinatesTest
         int x = Integer.parseInt(xLabel.getText());
         int y = Integer.parseInt(yLabel.getText());
 
-        Assert.assertEquals(
+        assertEquals(
                 "Reported X-coordinate from Embedded does not match click location",
                 expectedX, x);
 
-        // IE10 and IE11 sometimes click one pixel below the given position
-        int tolerance = isIE() ? 1 : 0;
-        Assert.assertTrue(
+        // IE10 and IE11 sometimes click one pixel below the given position,
+        // so does the Chrome(since 75)
+        int tolerance;
+        if (isIE() || isChrome()) {
+            tolerance = 1;
+        } else {
+            tolerance = 0;
+        }
+        assertEquals(
                 "Reported Y-coordinate from Embedded does not match click location",
-                Math.abs(expectedY - y) <= tolerance);
+                expectedY, y, tolerance);
     }
 
     private boolean isIE() {
         return BrowserUtil.isIE(getDesiredCapabilities());
+    }
+
+    private boolean isChrome() {
+        return BrowserUtil.isChrome(getDesiredCapabilities());
     }
 
 }

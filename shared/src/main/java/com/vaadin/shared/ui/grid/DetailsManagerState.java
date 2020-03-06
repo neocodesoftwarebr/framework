@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -22,4 +22,12 @@ package com.vaadin.shared.ui.grid;
  */
 public class DetailsManagerState extends AbstractGridExtensionState {
 
+    /**
+     * For informing the connector when details handling can be skipped
+     * altogether as it's not possible to have any details rows without a
+     * generator.
+     * 
+     * @since 8.9
+     */
+    public boolean hasDetailsGenerator = false;
 }

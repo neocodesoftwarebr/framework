@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.vaadin.shared.VBrowserDetails;
@@ -14,6 +13,7 @@ public class VBrowserDetailsUserAgentParserTest {
     private static final String FIREFOX30_WINDOWS = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-GB; rv:1.9.0.6) Gecko/2009011913 Firefox/3.0.6";
     private static final String FIREFOX30_LINUX = "Mozilla/5.0 (X11; U; Linux x86_64; es-ES; rv:1.9.0.12) Gecko/2009070811 Ubuntu/9.04 (jaunty) Firefox/3.0.12";
     private static final String FIREFOX33_ANDROID = "Mozilla/5.0 (Android; Tablet; rv:33.0) Gecko/33.0 Firefox/33.0";
+    private static final String FIREFOX57_ANDROID = "Mozilla/5.0 (Android 8.1.0; Mobile; rv:57.0) Gecko/57.0 Firefox/57.0";
     private static final String FIREFOX35_WINDOWS = "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.1.8) Gecko/20100202 Firefox/3.5.8 (.NET CLR 3.5.30729) FirePHP/0.4";
     private static final String FIREFOX36_WINDOWS = "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2) Gecko/20100115 Firefox/3.6 (.NET CLR 3.5.30729)";
     private static final String FIREFOX36B_MAC = "UAString mozilla/5.0 (macintosh; u; intel mac os x 10.6; en-us; rv:1.9.2) gecko/20100115 firefox/3.6";
@@ -44,6 +44,10 @@ public class VBrowserDetailsUserAgentParserTest {
     private static final String IPHONE_IOS_4_0 = "Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_0 like Mac OS X; en-us) AppleWebKit/532.9 (KHTML, like Gecko) Version/4.0.5 Mobile/8A293 Safari/6531.22.7";
     private static final String IPAD_IOS_4_3_1 = "Mozilla/5.0 (iPad; U; CPU OS 4_3_1 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8G4 Safari/6533.18.5";
 
+    private static final String IPHONE_IOS9_1_FIREFOX = "Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) FxiOS/8.3b5826 Mobile/13B143 Safari/601.1.46";
+    private static final String IPHONE_IOS9_1_SAFARI = "Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1";
+    private static final String IPHONE_IOS9_1_CHROME = "Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/63.0.3239.73 Mobile/13B143 Safari/601.1.46";
+
     // application on the home screen, without Safari in user agent
     private static final String IPHONE_IOS_6_1_HOMESCREEN_SIMULATOR = "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Mobile/10B141";
 
@@ -57,6 +61,8 @@ public class VBrowserDetailsUserAgentParserTest {
     private static final String PHANTOMJS_211_MAC = "Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/538.1 (KHTML, like Gecko) PhantomJS/2.1.1 Safari/538.1";
     private static final String CHROME_57_ON_IOS_10_3_1 = "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) CriOS/57.0.2987.137 Mobile/14E304 Safari/602.1";
 
+    private static final String CHROME_40_ON_CHROMEOS = "Mozilla/5.0 (X11; CrOS x86_64 6457.31.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.38 Safari/537.36";
+
     @Test
     public void testSafari3() {
         VBrowserDetails bd = new VBrowserDetails(SAFARI3_WINDOWS);
@@ -64,6 +70,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertSafari(bd);
         assertBrowserMajorVersion(bd, 3);
         assertBrowserMinorVersion(bd, 2);
+        assertBrowserVersion(bd, "3.2.3");
         assertEngineVersion(bd, 525.0f);
         assertWindows(bd);
     }
@@ -75,6 +82,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertSafari(bd);
         assertBrowserMajorVersion(bd, 4);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "4.0.5");
         assertEngineVersion(bd, 531f);
         assertMacOSX(bd);
     }
@@ -100,6 +108,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertSafari(bd);
         assertBrowserMajorVersion(bd, 5);
         assertBrowserMinorVersion(bd, 1);
+        assertBrowserVersion(bd, "5.1");
         assertEngineVersion(bd, 534f);
         assertIOS(bd, 5, 1);
         assertIPhone(bd);
@@ -112,6 +121,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertSafari(bd);
         assertBrowserMajorVersion(bd, 4);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "4.0.5");
         assertEngineVersion(bd, 532f);
         assertIOS(bd, 4, 0);
         assertIPhone(bd);
@@ -136,6 +146,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertSafari(bd);
         assertBrowserMajorVersion(bd, 4);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "4.0");
         assertEngineVersion(bd, 530f);
         assertAndroid(bd, 2, 1);
 
@@ -148,6 +159,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertSafari(bd);
         assertBrowserMajorVersion(bd, 4);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "4.0");
         assertEngineVersion(bd, 533f);
         assertAndroid(bd, 2, 2);
     }
@@ -159,6 +171,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertSafari(bd);
         assertBrowserMajorVersion(bd, 4);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "4.0");
         assertEngineVersion(bd, 534f);
         assertAndroid(bd, 3, 0);
     }
@@ -171,6 +184,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertChrome(bd);
         assertBrowserMajorVersion(bd, 18);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "18.0.1025.133");
         assertEngineVersion(bd, 535f);
         assertAndroid(bd, 4, 0);
     }
@@ -190,6 +204,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertChrome(bd);
         assertBrowserMajorVersion(bd, 3);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "3.0.198");
         assertEngineVersion(bd, 532.0f);
         assertMacOSX(bd);
     }
@@ -201,8 +216,21 @@ public class VBrowserDetailsUserAgentParserTest {
         assertChrome(bd);
         assertBrowserMajorVersion(bd, 4);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "4.0.249.89");
         assertEngineVersion(bd, 532f);
         assertWindows(bd);
+    }
+
+    @Test
+    public void testChromeChromeOS() {
+        VBrowserDetails bd = new VBrowserDetails(CHROME_40_ON_CHROMEOS);
+        assertWebKit(bd);
+        assertChrome(bd);
+        assertBrowserMajorVersion(bd, 40);
+        assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "40.0.2214.38");
+        assertEngineVersion(bd, 537f);
+        assertChromeOS(bd);
     }
 
     @Test
@@ -212,6 +240,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertChrome(bd);
         assertBrowserMajorVersion(bd, 57);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "57.0.2987.137");
         assertEngineVersion(bd, 602f);
         assertIOS(bd, 10, 3);
     }
@@ -223,6 +252,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 3);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "3.0.6");
         assertEngineVersion(bd, 1.9f);
         assertWindows(bd);
 
@@ -231,6 +261,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 3);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "3.0.12");
         assertEngineVersion(bd, 1.9f);
         assertLinux(bd);
     }
@@ -242,7 +273,18 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 33);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "33.0");
         assertAndroid(bd, -1, -1);
+    }
+
+    @Test
+    public void testFirefox57Android() {
+        VBrowserDetails bd = new VBrowserDetails(FIREFOX57_ANDROID);
+        assertGecko(bd);
+        assertFirefox(bd);
+        assertBrowserMajorVersion(bd, 57);
+        assertBrowserMinorVersion(bd, 0);
+        assertAndroid(bd, 8, 1);
     }
 
     @Test
@@ -252,6 +294,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 3);
         assertBrowserMinorVersion(bd, 5);
+        assertBrowserVersion(bd, "3.5.8");
         assertEngineVersion(bd, 1.9f);
         assertWindows(bd);
     }
@@ -263,6 +306,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 3);
         assertBrowserMinorVersion(bd, 6);
+        assertBrowserVersion(bd, "3.6");
         assertEngineVersion(bd, 1.9f);
         assertWindows(bd);
     }
@@ -274,6 +318,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 3);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "3.0b5");
         assertEngineVersion(bd, 1.9f);
         assertMacOSX(bd);
     }
@@ -285,6 +330,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 4);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "4.0b11");
         assertEngineVersion(bd, 2.0f);
         assertWindows(bd);
     }
@@ -296,6 +342,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 4);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "4.0b7");
         assertEngineVersion(bd, 2.0f);
         assertWindows(bd);
     }
@@ -314,6 +361,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFirefox(bd);
         assertBrowserMajorVersion(bd, 3);
         assertBrowserMinorVersion(bd, 6);
+        assertBrowserVersion(bd, "3.6");
         assertEngineVersion(bd, 1.9f);
         assertMacOSX(bd);
     }
@@ -325,6 +373,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertOpera(bd);
         assertBrowserMajorVersion(bd, 9);
         assertBrowserMinorVersion(bd, 64);
+        assertBrowserVersion(bd, "9.64");
         assertWindows(bd);
     }
 
@@ -335,6 +384,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertOpera(bd);
         assertBrowserMajorVersion(bd, 10);
         assertBrowserMinorVersion(bd, 10);
+        assertBrowserVersion(bd, "10.10");
         assertWindows(bd);
     }
 
@@ -345,6 +395,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertOpera(bd);
         assertBrowserMajorVersion(bd, 10);
         assertBrowserMinorVersion(bd, 50);
+        assertBrowserVersion(bd, "10.50");
         assertWindows(bd);
     }
 
@@ -356,6 +407,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertIE(bd);
         assertBrowserMajorVersion(bd, 11);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "11.0");
         assertWindows(bd);
     }
 
@@ -368,6 +420,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertIE(bd);
         assertBrowserMajorVersion(bd, 11);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "11.0");
         assertWindows(bd);
     }
 
@@ -380,6 +433,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertIE(bd);
         assertBrowserMajorVersion(bd, 11);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "11.0");
         assertWindows(bd);
     }
 
@@ -392,6 +446,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertIE(bd);
         assertBrowserMajorVersion(bd, 11);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "11.0");
         assertWindows(bd);
     }
 
@@ -403,6 +458,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertIE(bd);
         assertBrowserMajorVersion(bd, 11);
         assertBrowserMinorVersion(bd, 0);
+        assertBrowserVersion(bd, "11.0");
         assertWindows(bd, true);
     }
 
@@ -412,6 +468,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertEdge(bd);
         assertBrowserMajorVersion(bd, 12);
         assertBrowserMinorVersion(bd, 10240);
+        assertBrowserVersion(bd, "12.10240");
         assertWindows(bd, false);
     }
 
@@ -422,16 +479,50 @@ public class VBrowserDetailsUserAgentParserTest {
         assertWebKit(bd);
         assertBrowserMajorVersion(bd, 2);
         assertBrowserMinorVersion(bd, 1);
+        assertBrowserVersion(bd, "2.1.1");
         assertMacOSX(bd);
     }
 
     @Test
     public void checkFFsupportedVersions() {
         VBrowserDetails details = new VBrowserDetails(FIREFOX_40B11_WIN);
-        Assert.assertTrue(details.isTooOldToFunctionProperly());
+        assertTrue(details.isTooOldToFunctionProperly());
 
         details = new VBrowserDetails(FIREFOX_SUPPORTED);
-        Assert.assertFalse(details.isTooOldToFunctionProperly());
+        assertFalse(details.isTooOldToFunctionProperly());
+    }
+
+    @Test
+    public void testFirefoxIos() {
+        VBrowserDetails details = new VBrowserDetails(IPHONE_IOS9_1_FIREFOX);
+        assertFirefox(details);
+        assertBrowserMajorVersion(details, 8);
+        assertBrowserMinorVersion(details, 3);
+        assertBrowserVersion(details, "8.3b5826");
+        assertWebKit(details);
+        assertEngineVersion(details, 601);
+    }
+
+    @Test
+    public void testSafariIos() {
+        VBrowserDetails details = new VBrowserDetails(IPHONE_IOS9_1_SAFARI);
+        assertSafari(details);
+        assertBrowserMajorVersion(details, 9);
+        assertBrowserMinorVersion(details, 0);
+        assertBrowserVersion(details, "9.0");
+        assertWebKit(details);
+        assertEngineVersion(details, 601);
+    }
+
+    @Test
+    public void testChromeIos() {
+        VBrowserDetails details = new VBrowserDetails(IPHONE_IOS9_1_CHROME);
+        assertChrome(details);
+        assertBrowserMajorVersion(details, 63);
+        assertBrowserMinorVersion(details, 0);
+        assertBrowserVersion(details, "63.0.3239.73");
+        assertWebKit(details);
+        assertEngineVersion(details, 601);
     }
 
     /*
@@ -454,6 +545,11 @@ public class VBrowserDetailsUserAgentParserTest {
             int version) {
         assertEquals(version, browserDetails.getBrowserMinorVersion());
 
+    }
+
+    private void assertBrowserVersion(VBrowserDetails browserDetails,
+            String version) {
+        assertEquals(version, browserDetails.getBrowserVersion());
     }
 
     private void assertGecko(VBrowserDetails browserDetails) {
@@ -570,6 +666,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFalse(browserDetails.isWindows());
         assertTrue(browserDetails.isMacOSX());
         assertFalse(browserDetails.isAndroid());
+        assertFalse(browserDetails.isChromeOS());
     }
 
     private void assertAndroid(VBrowserDetails browserDetails, int majorVersion,
@@ -579,6 +676,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFalse(browserDetails.isMacOSX());
         assertFalse(browserDetails.isIOS());
         assertTrue(browserDetails.isAndroid());
+        assertFalse(browserDetails.isChromeOS());
 
         assertOSMajorVersion(browserDetails, majorVersion);
         assertOSMinorVersion(browserDetails, minorVersion);
@@ -591,6 +689,7 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFalse(browserDetails.isMacOSX());
         assertTrue(browserDetails.isIOS());
         assertFalse(browserDetails.isAndroid());
+        assertFalse(browserDetails.isChromeOS());
 
         assertOSMajorVersion(browserDetails, majorVersion);
         assertOSMinorVersion(browserDetails, minorVersion);
@@ -617,7 +716,8 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFalse(browserDetails.isMacOSX());
         assertFalse(browserDetails.isIOS());
         assertFalse(browserDetails.isAndroid());
-        Assert.assertEquals(isWindowsPhone, browserDetails.isWindowsPhone());
+        assertFalse(browserDetails.isChromeOS());
+        assertEquals(isWindowsPhone, browserDetails.isWindowsPhone());
     }
 
     private void assertLinux(VBrowserDetails browserDetails) {
@@ -626,6 +726,16 @@ public class VBrowserDetailsUserAgentParserTest {
         assertFalse(browserDetails.isMacOSX());
         assertFalse(browserDetails.isIOS());
         assertFalse(browserDetails.isAndroid());
+        assertFalse(browserDetails.isChromeOS());
+    }
+
+    private void assertChromeOS(VBrowserDetails browserDetails) {
+        assertFalse(browserDetails.isLinux());
+        assertFalse(browserDetails.isWindows());
+        assertFalse(browserDetails.isMacOSX());
+        assertFalse(browserDetails.isIOS());
+        assertFalse(browserDetails.isAndroid());
+        assertTrue(browserDetails.isChromeOS());
     }
 
 }

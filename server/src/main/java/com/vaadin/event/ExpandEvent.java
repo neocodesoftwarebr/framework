@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,21 +15,22 @@
  */
 package com.vaadin.event;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 
 import com.vaadin.ui.Component;
 import com.vaadin.util.ReflectTools;
 
 /**
- * An event that is fired when an item is expanded.
+ * An event that is fired when an item is expanded in a listing component that
+ * displays hierarchical data.
  *
  * @author Vaadin Ltd
  * @since 8.1
  * @param <T>
  *            the expanded item's type
  */
-public class ExpandEvent<T> extends Component.Event {
+public class ExpandEvent<T> extends Component.Event
+        implements HasUserOriginated {
 
     private final T expandedItem;
 
@@ -62,13 +63,7 @@ public class ExpandEvent<T> extends Component.Event {
         return expandedItem;
     }
 
-    /**
-     * Returns whether this event was triggered by user interaction, on the
-     * client side, or programmatically, on the server side.
-     *
-     * @return {@code true} if this event originates from the client,
-     *         {@code false} otherwise.
-     */
+    @Override
     public boolean isUserOriginated() {
         return userOriginated;
     }
@@ -81,7 +76,7 @@ public class ExpandEvent<T> extends Component.Event {
      * @since 8.1
      */
     @FunctionalInterface
-    public interface ExpandListener<T> extends Serializable {
+    public interface ExpandListener<T> extends SerializableEventListener {
 
         public static final Method EXPAND_METHOD = ReflectTools.findMethod(
                 ExpandListener.class, "itemExpand", ExpandEvent.class);

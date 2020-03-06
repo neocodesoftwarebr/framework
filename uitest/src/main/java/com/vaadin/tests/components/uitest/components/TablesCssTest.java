@@ -1,16 +1,19 @@
 package com.vaadin.tests.components.uitest.components;
 
 import java.util.HashSet;
+import java.util.Iterator;
 
 import com.vaadin.event.Action;
 import com.vaadin.server.ThemeResource;
 import com.vaadin.tests.components.uitest.TestSampler;
 import com.vaadin.tests.util.TestUtils;
+import com.vaadin.ui.Component;
 import com.vaadin.ui.GridLayout;
 import com.vaadin.v7.ui.Table;
 import com.vaadin.v7.ui.themes.ChameleonTheme;
 import com.vaadin.v7.ui.themes.Reindeer;
 
+@SuppressWarnings("deprecation")
 public class TablesCssTest extends GridLayout {
 
     private TestSampler parent;
@@ -19,10 +22,8 @@ public class TablesCssTest extends GridLayout {
     private final Action ACTION_MARK = new Action("Mark");
     private final Action ACTION_UNMARK = new Action("Unmark");
     private final Action ACTION_LOG = new Action("Save");
-    private final Action[] ACTIONS_UNMARKED = new Action[] { ACTION_MARK,
-            ACTION_LOG };
-    private final Action[] ACTIONS_MARKED = new Action[] { ACTION_UNMARK,
-            ACTION_LOG };
+    private final Action[] ACTIONS_UNMARKED = { ACTION_MARK, ACTION_LOG };
+    private final Action[] ACTIONS_MARKED = { ACTION_UNMARK, ACTION_LOG };
 
     public TablesCssTest(TestSampler parent) {
         super();
@@ -39,6 +40,16 @@ public class TablesCssTest extends GridLayout {
         createTableWith("Striped", ChameleonTheme.TABLE_STRIPED);
         createTableWith("Strong", Reindeer.TABLE_STRONG);
 
+        parent.addReadOnlyChangeListener(event -> {
+            Iterator<Component> iterator = iterator();
+            while (iterator.hasNext()) {
+                Component c = iterator.next();
+                if (c instanceof Table) {
+                    Table t = (Table) c;
+                    t.setReadOnly(!t.isReadOnly());
+                }
+            }
+        });
     }
 
     private void createTableWith(String caption, String primaryStyleName) {
@@ -68,7 +79,7 @@ public class TablesCssTest extends GridLayout {
         t.setColumnCollapsingAllowed(true);
         // t.setColumnHeaders(new String[] { "Country", "Code", "Icon file" });
         t.setColumnIcon(TestUtils.iso3166_PROPERTY_NAME,
-                new ThemeResource(parent.ICON_URL));
+                new ThemeResource(TestSampler.ICON_URL));
 
         // Actions (a.k.a context menu)
         t.addActionHandler(new Action.Handler() {

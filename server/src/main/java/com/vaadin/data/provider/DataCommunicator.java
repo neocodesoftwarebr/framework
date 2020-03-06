@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,18 +15,21 @@
  */
 package com.vaadin.data.provider;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.vaadin.data.ValueProvider;
 import com.vaadin.data.provider.DataChangeEvent.DataRefreshEvent;
 import com.vaadin.server.AbstractExtension;
 import com.vaadin.server.KeyMapper;
@@ -37,6 +40,7 @@ import com.vaadin.shared.data.DataCommunicatorClientRpc;
 import com.vaadin.shared.data.DataCommunicatorConstants;
 import com.vaadin.shared.data.DataRequestRpc;
 import com.vaadin.shared.extension.datacommunicator.DataCommunicatorState;
+import com.vaadin.ui.ComboBox;
 
 import elemental.json.Json;
 import elemental.json.JsonArray;
@@ -82,14 +86,13 @@ public class DataCommunicator<T> extends AbstractExtension {
      * {@link DataKeyMapper}.
      * <p>
      * When the {@link DataCommunicator} is pushing new data to the client-side
-     * via {@link DataCommunicator#pushData(int, Stream)},
+     * via {@link DataCommunicator#pushData(int, List)},
      * {@link #addActiveData(Stream)} and {@link #cleanUp(Stream)} are called
      * with the same parameter. In the clean up method any dropped data objects
      * that are not in the given collection will be cleaned up and
      * {@link DataGenerator#destroyData(Object)} will be called for them.
      */
-    protected class ActiveDataHandler
-            implements Serializable, DataGenerator<T> {
+    protected class ActiveDataHandler implements DataGenerator<T> {
 
         /**
          * Set of key strings for currently active data objects
@@ -138,6 +141,15 @@ public class DataCommunicator<T> extends AbstractExtension {
         }
 
         /**
+         * Marks all currently active data objects to be dropped.
+         *
+         * @since 8.6.0
+         */
+        public void dropAllActiveData() {
+            activeData.forEach(this::dropActiveData);
+        }
+
+        /**
          * Marks a data object identified by given key string to be dropped.
          *
          * @param key
@@ -150,20 +162,35 @@ public class DataCommunicator<T> extends AbstractExtension {
         }
 
         /**
-         * Returns the collection of all currently active data.
+         * Returns all dropped data mapped by their id from DataProvider.
          *
-         * @return collection of active data objects
+         * @return map of ids to dropped data objects
+         *
+         * @since 8.6.0
          */
-        public Collection<T> getActiveData() {
-            HashSet<T> hashSet = new HashSet<>();
-            for (String key : activeData) {
-                hashSet.add(getKeyMapper().get(key));
-            }
-            return hashSet;
+        protected Map<Object, T> getDroppedData() {
+            Function<T, Object> getId = getDataProvider()::getId;
+            return droppedData.stream().map(getKeyMapper()::get)
+                    .collect(Collectors.toMap(getId, i -> i));
+        }
+
+        /**
+         * Returns all currently active data mapped by their id from
+         * DataProvider.
+         *
+         * @return map of ids to active data objects
+         */
+        public Map<Object, T> getActiveData() {
+            Function<T, Object> getId = getDataProvider()::getId;
+            return activeData.stream().map(getKeyMapper()::get)
+                    .collect(Collectors.toMap(getId, i -> i));
         }
 
         @Override
         public void generateData(T data, JsonObject jsonObject) {
+            // Make sure KeyMapper is up to date
+            getKeyMapper().refresh(data);
+
             // Write the key string for given data object
             jsonObject.put(DataCommunicatorConstants.KEY,
                     getKeyMapper().key(data));
@@ -179,7 +206,9 @@ public class DataCommunicator<T> extends AbstractExtension {
 
         @Override
         public void destroyAllData() {
+            droppedData.clear();
             activeData.clear();
+            updatedData.clear();
             getKeyMapper().removeAll();
         }
     }
@@ -187,12 +216,13 @@ public class DataCommunicator<T> extends AbstractExtension {
     private final Collection<DataGenerator<T>> generators = new LinkedHashSet<>();
     private final ActiveDataHandler handler = new ActiveDataHandler();
 
-    /** Empty default data provider */
-    protected DataProvider<T, ?> dataProvider = new CallbackDataProvider<>(
+    /** Empty default data provider. */
+    private DataProvider<T, ?> dataProvider = new CallbackDataProvider<>(
             q -> Stream.empty(), q -> 0);
     private final DataKeyMapper<T> keyMapper;
 
-    protected boolean reset = false;
+    /** Boolean for pending hard reset. */
+    protected boolean reset = true;
     private final Set<T> updatedData = new HashSet<>();
     private int minPushSize = 40;
     private Range pushRows = Range.withLength(0, minPushSize);
@@ -206,7 +236,7 @@ public class DataCommunicator<T> extends AbstractExtension {
         addDataGenerator(handler);
         rpc = getRpcProxy(DataCommunicatorClientRpc.class);
         registerRpc(createRpc());
-        keyMapper = createKeyMapper();
+        keyMapper = createKeyMapper(dataProvider::getId);
     }
 
     @Override
@@ -301,6 +331,11 @@ public class DataCommunicator<T> extends AbstractExtension {
     public void beforeClientResponse(boolean initial) {
         super.beforeClientResponse(initial);
 
+        if (initial && getPushRows().isEmpty()) {
+            // Make sure rows are pushed when component is attached.
+            setPushRows(Range.withLength(0, getMinPushSize()));
+        }
+
         sendDataToClient(initial);
     }
 
@@ -317,28 +352,11 @@ public class DataCommunicator<T> extends AbstractExtension {
         }
 
         if (initial || reset) {
-            @SuppressWarnings({ "rawtypes", "unchecked" })
-            int dataProviderSize = getDataProvider().size(new Query(filter));
-            rpc.reset(dataProviderSize);
-        }
-
-        Range requestedRows = getPushRows();
-        boolean triggerReset = false;
-        if (!requestedRows.isEmpty()) {
-            int offset = requestedRows.getStart();
-            int limit = requestedRows.length();
-
-            @SuppressWarnings({ "rawtypes", "unchecked" })
-            List<T> rowsToPush = (List<T>) getDataProvider()
-                    .fetch(new Query(offset, limit, backEndSorting,
-                            inMemorySorting, filter))
-                    .collect(Collectors.toList());
-
-            if (!initial && !reset && rowsToPush.size() == 0) {
-                triggerReset = true;
+            if (reset) {
+                handler.dropAllActiveData();
             }
 
-            pushData(offset, rowsToPush);
+            rpc.reset(getDataProviderSize());
         }
 
         if (!updatedData.isEmpty()) {
@@ -350,9 +368,42 @@ public class DataCommunicator<T> extends AbstractExtension {
             rpc.updateData(dataArray);
         }
 
+        Range requestedRows = getPushRows();
+        boolean triggerReset = false;
+        if (!requestedRows.isEmpty()) {
+            int offset = requestedRows.getStart();
+            int limit = requestedRows.length();
+
+            List<T> rowsToPush = fetchItemsWithRange(offset, limit);
+
+            if (!initial && !reset && rowsToPush.isEmpty()) {
+                triggerReset = true;
+            }
+
+            pushData(offset, rowsToPush);
+        }
+
         setPushRows(Range.withLength(0, 0));
         reset = triggerReset;
         updatedData.clear();
+    }
+
+    /**
+     * Fetches a list of items from the DataProvider.
+     *
+     * @param offset
+     *            the starting index of the range
+     * @param limit
+     *            the max number of results
+     * @return the list of items in given range
+     *
+     * @since 8.1
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public List<T> fetchItemsWithRange(int offset, int limit) {
+        return (List<T>) getDataProvider().fetch(new Query(offset, limit,
+                backEndSorting, inMemorySorting, filter))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -474,34 +525,41 @@ public class DataCommunicator<T> extends AbstractExtension {
     }
 
     /**
-     * Informs the DataProvider that the collection has changed.
+     * Method for internal reset from a change in the component, requiring a
+     * full data update.
      */
     public void reset() {
-        if (reset) {
-            return;
+        // Only needed if a full reset is not pending.
+        if (!reset) {
+            if (getParent() instanceof ComboBox) {
+                beforeClientResponse(true);
+            }
+            // Soft reset through client-side re-request.
+            getClientRpc().reset(getDataProviderSize());
         }
-
-        reset = true;
-        markAsDirty();
     }
 
     /**
      * Informs the DataProvider that a data object has been updated.
      *
      * @param data
-     *            updated data object
+     *            updated data object; not {@code null}
      */
     public void refresh(T data) {
-        if (!handler.getActiveData().contains(data)) {
-            // Item is not currently available at the client-side
-            return;
-        }
+        Objects.requireNonNull(data,
+                "DataCommunicator can not refresh null object");
+        Object id = getDataProvider().getId(data);
 
-        if (updatedData.isEmpty()) {
-            markAsDirty();
-        }
+        // ActiveDataHandler has always the latest data through KeyMapper.
+        Map<Object, T> activeData = getActiveDataHandler().getActiveData();
 
-        updatedData.add(data);
+        if (activeData.containsKey(id)) {
+            // Item is currently available at the client-side
+            if (updatedData.isEmpty()) {
+                markAsDirty();
+            }
+            updatedData.add(activeData.get(id));
+        }
     }
 
     /**
@@ -519,10 +577,28 @@ public class DataCommunicator<T> extends AbstractExtension {
      *
      * @param comparator
      *            comparator used to sort data
+     * @param immediateReset
+     *            {@code true} if an internal reset should be performed
+     *            immediately after updating the comparator (unless full reset
+     *            is already pending), {@code false} if you are going to trigger
+     *            reset separately later
+     */
+    public void setInMemorySorting(Comparator<T> comparator,
+            boolean immediateReset) {
+        inMemorySorting = comparator;
+        if (immediateReset) {
+            reset();
+        }
+    }
+
+    /**
+     * Sets the {@link Comparator} to use with in-memory sorting.
+     *
+     * @param comparator
+     *            comparator used to sort data
      */
     public void setInMemorySorting(Comparator<T> comparator) {
-        inMemorySorting = comparator;
-        reset();
+        setInMemorySorting(comparator, true);
     }
 
     /**
@@ -540,21 +616,39 @@ public class DataCommunicator<T> extends AbstractExtension {
      *
      * @param sortOrder
      *            list of sort order information to pass to a query
+     * @param immediateReset
+     *            {@code true} if an internal reset should be performed
+     *            immediately after updating the comparator (unless full reset
+     *            is already pending), {@code false} if you are going to trigger
+     *            reset separately later
      */
-    public void setBackEndSorting(List<QuerySortOrder> sortOrder) {
+    public void setBackEndSorting(List<QuerySortOrder> sortOrder,
+            boolean immediateReset) {
         backEndSorting.clear();
         backEndSorting.addAll(sortOrder);
-        reset();
+        if (immediateReset) {
+            reset();
+        }
+    }
+
+    /**
+     * Sets the {@link QuerySortOrder}s to use with backend sorting.
+     *
+     * @param sortOrder
+     *            list of sort order information to pass to a query
+     */
+    public void setBackEndSorting(List<QuerySortOrder> sortOrder) {
+        setBackEndSorting(sortOrder, true);
     }
 
     /**
      * Returns the {@link QuerySortOrder} to use with backend sorting.
      *
-     * @return list of sort order information to pass to a query
+     * @return an unmodifiable list of sort order information to pass to a query
      * @since 8.0.6
      */
     public List<QuerySortOrder> getBackEndSorting() {
-        return backEndSorting;
+        return Collections.unmodifiableList(backEndSorting);
     }
 
     /**
@@ -562,10 +656,19 @@ public class DataCommunicator<T> extends AbstractExtension {
      * <p>
      * This method is called from the constructor.
      *
+     * @param identifierGetter
+     *            has to return a unique key for every bean, and the returned
+     *            key has to follow general {@code hashCode()} and
+     *            {@code equals()} contract, see {@link Object#hashCode()} for
+     *            details.
      * @return key mapper
+     *
+     * @since 8.1
+     *
      */
-    protected DataKeyMapper<T> createKeyMapper() {
-        return new KeyMapper<>();
+    protected DataKeyMapper<T> createKeyMapper(
+            ValueProvider<T, Object> identifierGetter) {
+        return new KeyMapper<T>(identifierGetter);
     }
 
     /**
@@ -610,9 +713,7 @@ public class DataCommunicator<T> extends AbstractExtension {
             DataProvider<T, F> dataProvider, F initialFilter) {
         Objects.requireNonNull(dataProvider, "data provider cannot be null");
         filter = initialFilter;
-        detachDataProviderListener();
-        dropAllData();
-        this.dataProvider = dataProvider;
+        setDataProvider(dataProvider);
 
         /*
          * This introduces behavior which influence on the client-server
@@ -630,7 +731,8 @@ public class DataCommunicator<T> extends AbstractExtension {
         if (isAttached()) {
             attachDataProviderListener();
         }
-        reset();
+        reset = true;
+        markAsDirty();
 
         return filter -> {
             if (this.dataProvider != dataProvider) {
@@ -639,10 +741,30 @@ public class DataCommunicator<T> extends AbstractExtension {
             }
 
             if (!Objects.equals(this.filter, filter)) {
-                this.filter = filter;
+                setFilter(filter);
                 reset();
+
+                // Make sure filter change causes data to be sent again.
+                markAsDirty();
             }
         };
+    }
+
+    /**
+     * Sets the filter for this DataCommunicator. This method is used by user
+     * through the consumer method from {@link #setDataProvider} and should not
+     * be called elsewhere.
+     *
+     * @param filter
+     *            the filter
+     *
+     * @param <F>
+     *            the filter type
+     *
+     * @since 8.1
+     */
+    protected <F> void setFilter(F filter) {
+        this.filter = filter;
     }
 
     /**
@@ -682,6 +804,17 @@ public class DataCommunicator<T> extends AbstractExtension {
         return minPushSize;
     }
 
+    /**
+     * Getter method for finding the size of DataProvider. Can be overridden by
+     * a subclass that uses a specific type of DataProvider and/or query.
+     *
+     * @return the size of data provider with current filter
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public int getDataProviderSize() {
+        return getDataProvider().size(new Query(getFilter()));
+    }
+
     @Override
     protected DataCommunicatorState getState(boolean markAsDirty) {
         return (DataCommunicatorState) super.getState(markAsDirty);
@@ -695,16 +828,15 @@ public class DataCommunicator<T> extends AbstractExtension {
     private void attachDataProviderListener() {
         dataProviderUpdateRegistration = getDataProvider()
                 .addDataProviderListener(event -> {
-                    getUI().access(() -> {
-                        if (event instanceof DataRefreshEvent) {
-                            T item = ((DataRefreshEvent<T>) event).getItem();
-                            generators.forEach(g -> g.refreshData(item));
-                            keyMapper.refresh(item, dataProvider::getId);
-                            refresh(item);
-                        } else {
-                            reset();
-                        }
-                    });
+                    if (event instanceof DataRefreshEvent) {
+                        T item = ((DataRefreshEvent<T>) event).getItem();
+                        getKeyMapper().refresh(item);
+                        generators.forEach(g -> g.refreshData(item));
+                        getUI().access(() -> refresh(item));
+                    } else {
+                        reset = true;
+                        getUI().access(() -> markAsDirty());
+                    }
                 });
     }
 
@@ -713,5 +845,19 @@ public class DataCommunicator<T> extends AbstractExtension {
             dataProviderUpdateRegistration.remove();
             dataProviderUpdateRegistration = null;
         }
+    }
+
+    /**
+     * Sets a new {@code DataProvider} and refreshes all the internal
+     * structures.
+     *
+     * @param dataProvider
+     * @since 8.1
+     */
+    protected void setDataProvider(DataProvider<T, ?> dataProvider) {
+        detachDataProviderListener();
+        dropAllData();
+        this.dataProvider = dataProvider;
+        getKeyMapper().setIdentifierGetter(dataProvider::getId);
     }
 }

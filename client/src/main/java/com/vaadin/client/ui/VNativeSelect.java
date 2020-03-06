@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,7 +17,6 @@ package com.vaadin.client.ui;
 
 import java.util.Objects;
 
-import com.google.gwt.event.dom.client.HasAllFocusHandlers;
 import com.google.gwt.user.client.ui.ListBox;
 import com.vaadin.client.widgets.FocusableFlowPanelComposite;
 import com.vaadin.shared.ui.nativeselect.NativeSelectState;
@@ -27,10 +26,10 @@ import com.vaadin.shared.ui.nativeselect.NativeSelectState;
  *
  * @author Vaadin Ltd.
  */
-public class VNativeSelect extends FocusableFlowPanelComposite
-        implements HasAllFocusHandlers {
+public class VNativeSelect extends FocusableFlowPanelComposite {
 
     private final ListBox listBox = new ListBox();
+    private boolean emptySelectionAllowed = true;
 
     /**
      * Creates a new {@code VNativeSelect} instance.
@@ -57,7 +56,11 @@ public class VNativeSelect extends FocusableFlowPanelComposite
      */
     public void setSelectedItem(String value) {
         if (value == null) {
-            getListBox().setSelectedIndex(-1);
+            if (emptySelectionAllowed) {
+                getListBox().setSelectedIndex(0);
+            } else {
+                getListBox().setSelectedIndex(-1);
+            }
         } else {
             for (int i = 0; i < getListBox().getItemCount(); i++) {
                 if (Objects.equals(value, getListBox().getValue(i))) {
@@ -134,4 +137,23 @@ public class VNativeSelect extends FocusableFlowPanelComposite
         return getListBox().getVisibleItemCount();
     }
 
+    /**
+     * Returns true if empty selection is allowed.
+     *
+     * @since 8.7
+     * @return empty selection is allowed
+     */
+    public boolean isEmptySelectionAllowed() {
+        return emptySelectionAllowed;
+    }
+
+    /**
+     * Sets true if empty selection is allowed.
+     *
+     * @since 8.7
+     * @param emptySelectionAllowed
+     */
+    public void setEmptySelectionAllowed(boolean emptySelectionAllowed) {
+        this.emptySelectionAllowed = emptySelectionAllowed;
+    }
 }

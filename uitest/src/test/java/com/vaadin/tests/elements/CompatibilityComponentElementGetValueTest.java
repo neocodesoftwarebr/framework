@@ -1,23 +1,9 @@
-/*
- * Copyright 2000-2014 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.tests.elements;
+
+import static org.junit.Assert.assertEquals;
 
 import java.text.SimpleDateFormat;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,7 +33,7 @@ public class CompatibilityComponentElementGetValueTest
         ComboBoxElement elem = $(ComboBoxElement.class).get(0);
         String expected = ComponentElementGetValue.TEST_STRING_VALUE;
         String actual = elem.getValue();
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -55,7 +41,7 @@ public class CompatibilityComponentElementGetValueTest
         ListSelectElement elem = $(ListSelectElement.class).get(0);
         String expected = ComponentElementGetValue.TEST_STRING_VALUE;
         String actual = elem.getValue();
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -63,7 +49,7 @@ public class CompatibilityComponentElementGetValueTest
         NativeSelectElement elem = $(NativeSelectElement.class).get(0);
         String expected = ComponentElementGetValue.TEST_STRING_VALUE;
         String actual = elem.getValue();
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -71,7 +57,7 @@ public class CompatibilityComponentElementGetValueTest
         OptionGroupElement elem = $(OptionGroupElement.class).get(0);
         String expected = ComponentElementGetValue.TEST_STRING_VALUE;
         String actual = elem.getValue();
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -79,7 +65,7 @@ public class CompatibilityComponentElementGetValueTest
         TwinColSelectElement elem = $(TwinColSelectElement.class).get(0);
         String expected = ComponentElementGetValue.TEST_STRING_VALUE;
         String actual = elem.getValue();
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -105,7 +91,7 @@ public class CompatibilityComponentElementGetValueTest
         CheckBoxElement cb = $(CheckBoxElement.class).get(0);
         String expected = "checked";
         String actual = cb.getValue();
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -115,12 +101,12 @@ public class CompatibilityComponentElementGetValueTest
         String expected = format1
                 .format(CompatibilityComponentElementGetValue.TEST_DATE_VALUE);
         String actual = df.getValue();
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     private void checkValue(AbstractTextFieldElement elem) {
         String expected = ComponentElementGetValue.TEST_STRING_VALUE;
         String actual = elem.getValue();
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 }

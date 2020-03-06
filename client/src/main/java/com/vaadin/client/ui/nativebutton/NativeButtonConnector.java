@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,20 +15,24 @@
  */
 package com.vaadin.client.ui.nativebutton;
 
-import com.google.gwt.user.client.DOM;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.vaadin.client.MouseEventDetailsBuilder;
 import com.vaadin.client.VCaption;
 import com.vaadin.client.communication.StateChangeEvent;
 import com.vaadin.client.ui.AbstractComponentConnector;
 import com.vaadin.client.ui.ConnectorFocusAndBlurHandler;
 import com.vaadin.client.ui.Icon;
 import com.vaadin.client.ui.VNativeButton;
+import com.vaadin.shared.MouseEventDetails;
 import com.vaadin.shared.ui.Connect;
 import com.vaadin.shared.ui.button.ButtonServerRpc;
 import com.vaadin.shared.ui.button.NativeButtonState;
 import com.vaadin.ui.NativeButton;
 
 @Connect(NativeButton.class)
-public class NativeButtonConnector extends AbstractComponentConnector {
+public class NativeButtonConnector extends AbstractComponentConnector
+        implements ClickHandler {
 
     @Override
     public void init() {
@@ -38,6 +42,7 @@ public class NativeButtonConnector extends AbstractComponentConnector {
         getWidget().client = getConnection();
         getWidget().paintableId = getConnectorId();
 
+        getWidget().addClickHandler(this);
         ConnectorFocusAndBlurHandler.addHandlers(this);
     }
 
@@ -50,27 +55,8 @@ public class NativeButtonConnector extends AbstractComponentConnector {
     public void onStateChanged(StateChangeEvent stateChangeEvent) {
         super.onStateChanged(stateChangeEvent);
 
-        getWidget().disableOnClick = getState().disableOnClick;
-
         // Set text
         VCaption.setCaptionText(getWidget(), getState());
-
-        // handle error
-        if (null != getState().errorMessage) {
-            if (getWidget().errorIndicatorElement == null) {
-                getWidget().errorIndicatorElement = DOM.createSpan();
-                getWidget().errorIndicatorElement
-                        .setClassName("v-errorindicator");
-            }
-            getWidget().getElement().insertBefore(
-                    getWidget().errorIndicatorElement,
-                    getWidget().captionElement);
-
-        } else if (getWidget().errorIndicatorElement != null) {
-            getWidget().getElement()
-                    .removeChild(getWidget().errorIndicatorElement);
-            getWidget().errorIndicatorElement = null;
-        }
 
         if (getWidget().icon != null) {
             getWidget().getElement().removeChild(getWidget().icon.getElement());
@@ -94,5 +80,22 @@ public class NativeButtonConnector extends AbstractComponentConnector {
     @Override
     public NativeButtonState getState() {
         return (NativeButtonState) super.getState();
+    }
+
+    @Override
+    public void onClick(ClickEvent event) {
+        if (getState().disableOnClick) {
+            getState().enabled = false;
+            super.updateEnabledState(false);
+            getRpcProxy(ButtonServerRpc.class).disableOnClick();
+        }
+
+        // Add mouse details
+        MouseEventDetails details = MouseEventDetailsBuilder
+                .buildMouseEventDetails(event.getNativeEvent(),
+                        getWidget().getElement());
+        getRpcProxy(ButtonServerRpc.class).click(details);
+
+        getWidget().clickPending = false;
     }
 }

@@ -1,29 +1,17 @@
-/*
- * Copyright 2000-2016 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.screenshotbrowser;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
 
 import com.vaadin.event.ShortcutAction.KeyCode;
 import com.vaadin.event.ShortcutListener;
@@ -32,15 +20,12 @@ import com.vaadin.server.FileResource;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.ui.BrowserFrame;
 import com.vaadin.ui.Button;
-import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.v7.data.Property.ValueChangeEvent;
-import com.vaadin.v7.data.Property.ValueChangeListener;
 import com.vaadin.v7.data.util.BeanItemContainer;
 import com.vaadin.v7.ui.Table;
 
@@ -54,11 +39,11 @@ public class ScreenshotBrowser extends UI {
      * 3 - platform
      * 4 - browser name
      * 5 - browser version
-     * 6 - additional qualifiers
-     * 7 - identifier
+     * 6 - identifier
+     * 7 - additional identifiers
      */
     private static final Pattern screenshotNamePattern = Pattern
-            .compile("(.+?)-(.+?)_(.+?)_(.+?)_(.+?)(_.+)?_(.+?)\\.png\\.html");
+            .compile("(.+?)-(.+?)_(.+?)_(.+?)_(.*?)_(.+?)(_.+)?\\.png\\.html");
 
     public static enum Action {
         ACCEPT {
@@ -116,7 +101,7 @@ public class ScreenshotBrowser extends UI {
         }
 
         private static File getReferenceDir() {
-            return new File(screenshotDir, "reference");
+            return new File(screenshotDir, "reference-screenshots");
         }
 
         private static File getAlternative(File baseFile,
@@ -165,12 +150,12 @@ public class ScreenshotBrowser extends UI {
             return matcher.group(4) + " " + matcher.group(5);
         }
 
-        public String getQualifiers() {
-            return matcher.group(6);
-        }
-
         public String getIdentifier() {
-            return matcher.group(7);
+            String additional = matcher.group(7);
+            if (additional != null) {
+                return matcher.group(6) + additional;
+            }
+            return matcher.group(6);
         }
 
         public void setAction(Action action) {
@@ -195,7 +180,8 @@ public class ScreenshotBrowser extends UI {
 
             left.setMargin(true);
             left.setSpacing(true);
-            left.setSizeFull();
+            left.setSizeUndefined();
+            left.setWidth("270px");
 
             left.addComponent(
                     createActionButton("Accept changes", 'j', Action.ACCEPT));
@@ -208,34 +194,27 @@ public class ScreenshotBrowser extends UI {
 
             left.addComponent(createSpacer());
             left.addComponent(
-                    new Button("Commit actions", new Button.ClickListener() {
-                        @Override
-                        public void buttonClick(ClickEvent event) {
-                            commitActions();
-                        }
-                    }));
+                    new Button("Commit actions", event -> commitActions()));
 
             left.addComponent(createSpacer());
-            left.addComponent(new Button("Refresh", new Button.ClickListener() {
-                @Override
-                public void buttonClick(ClickEvent event) {
-                    refreshTableContainer();
-                }
-            }));
+            left.addComponent(
+                    new Button("Refresh", event -> refreshTableContainer()));
 
             Label expandSpacer = createSpacer();
             left.addComponent(expandSpacer);
             left.setExpandRatio(expandSpacer, 1);
 
-            left.addComponent(new Label(
-                    "Press the j, k or l keys to quickly select an action for the selected item."));
+            Label instructions = new Label(
+                    "Press the j, k or l keys to quickly select an action for the selected item.");
+            instructions.setWidth("100%");
+            left.addComponent(instructions);
 
             root.setExpandRatio(left, 1);
             root.setSizeFull();
 
             setCompositionRoot(root);
             setHeight("850px");
-            setWidth("100%");
+            setWidth("1800px");
         }
 
         private Button createActionButton(String caption, char shortcut,
@@ -244,6 +223,11 @@ public class ScreenshotBrowser extends UI {
                     caption + " <strong>" + shortcut + "</strong>",
                     createSetActionListener(action));
             button.setCaptionAsHtml(true);
+            if (!Action.IGNORE.equals(action)) {
+                // other actions disabled for now since the functionality was
+                // designed for a different directory structure, needs reworking
+                button.setEnabled(false);
+            }
             return button;
         }
 
@@ -253,12 +237,7 @@ public class ScreenshotBrowser extends UI {
         }
 
         private ClickListener createSetActionListener(final Action action) {
-            return new ClickListener() {
-                @Override
-                public void buttonClick(ClickEvent event) {
-                    setActions(action);
-                }
-            };
+            return event -> setActions(action);
         }
 
         public void setActions(final Action action) {
@@ -286,18 +265,16 @@ public class ScreenshotBrowser extends UI {
     @Override
     protected void init(VaadinRequest request) {
         table.setWidth("100%");
-        table.setHeight("100%");
+        table.setPageLength(10);
 
         table.setMultiSelect(true);
-        table.addValueChangeListener(new ValueChangeListener() {
-            @Override
-            public void valueChange(ValueChangeEvent event) {
-                @SuppressWarnings("unchecked")
-                Collection<ComparisonFailure> selectedRows = (Collection<ComparisonFailure>) table
-                        .getValue();
+        table.addValueChangeListener(event -> {
 
-                viewer.setItems(selectedRows);
-            }
+            @SuppressWarnings("unchecked")
+            Collection<ComparisonFailure> selectedRows = (Collection<ComparisonFailure>) table
+                    .getValue();
+
+            viewer.setItems(selectedRows);
         });
 
         table.addShortcutListener(
@@ -309,9 +286,8 @@ public class ScreenshotBrowser extends UI {
 
         refreshTableContainer();
 
-        VerticalLayout mainLayout = new VerticalLayout(table, viewer);
-        mainLayout.setExpandRatio(table, 1);
-        mainLayout.setSizeFull();
+        VerticalLayout mainLayout = new VerticalLayout(viewer, table);
+        mainLayout.setSizeUndefined();
 
         setSizeFull();
         setContent(mainLayout);
@@ -374,14 +350,10 @@ public class ScreenshotBrowser extends UI {
     }
 
     private void refreshTableContainer() {
-        File errorsDir = new File(screenshotDir, "errors");
+        File errorsDir = new File(screenshotDir, "error-screenshots");
 
-        File[] failures = errorsDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.endsWith(".html");
-            }
-        });
+        Collection<File> failures = FileUtils.listFiles(errorsDir,
+                new SuffixFileFilter(".html"), DirectoryFileFilter.DIRECTORY);
 
         BeanItemContainer<ComparisonFailure> container = new BeanItemContainer<>(
                 ComparisonFailure.class);
@@ -391,7 +363,7 @@ public class ScreenshotBrowser extends UI {
 
         table.setContainerDataSource(container);
         table.setVisibleColumns("testClass", "testMethod", "browser",
-                "qualifiers", "identifier", "action");
+                "identifier", "action");
         if (container.size() > 0) {
             table.select(container.firstItemId());
         }

@@ -1,22 +1,9 @@
-/*
- * Copyright 2000-2016 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.v7.tests.server.component.grid;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,8 +40,7 @@ public class SingleSelectionModelTest {
 
     @After
     public void tearDown() {
-        Assert.assertFalse("Some expected event did not happen.",
-                expectingEvent);
+        assertFalse("Some expected event did not happen.", expectingEvent);
     }
 
     private IndexedContainer createDataSource() {
@@ -116,7 +102,7 @@ public class SingleSelectionModelTest {
         } catch (Exception e) {
             throw e.getCause();
         }
-        Assert.assertTrue("Should still wait for event", expectingEvent);
+        assertTrue("Should still wait for event", expectingEvent);
         expectingEvent = false;
     }
 
@@ -132,19 +118,18 @@ public class SingleSelectionModelTest {
             @Override
             public void select(SelectionEvent event) {
                 if (selected != null) {
-                    Assert.assertTrue("Selection did not contain expected item",
+                    assertTrue("Selection did not contain expected item",
                             event.getAdded().contains(selected));
                 } else {
-                    Assert.assertTrue("Unexpected selection",
+                    assertTrue("Unexpected selection",
                             event.getAdded().isEmpty());
                 }
 
                 if (deselected != null) {
-                    Assert.assertTrue(
-                            "DeSelection did not contain expected item",
+                    assertTrue("DeSelection did not contain expected item",
                             event.getRemoved().contains(deselected));
                 } else {
-                    Assert.assertTrue("Unexpected selection",
+                    assertTrue("Unexpected selection",
                             event.getRemoved().isEmpty());
                 }
 

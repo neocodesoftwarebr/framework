@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -77,7 +77,7 @@ public class GeneratedPropertyContainer extends AbstractContainer
     private final Set<Object> removedProperties = new HashSet<Object>();
 
     /**
-     * Property implementation for generated properties
+     * Property implementation for generated properties.
      */
     @Deprecated
     protected static class GeneratedProperty<T> implements Property<T> {
@@ -208,7 +208,7 @@ public class GeneratedPropertyContainer extends AbstractContainer
         }
 
         /**
-         * Returns the wrapped Item that belongs to the wrapped container
+         * Returns the wrapped Item that belongs to the wrapped container.
          *
          * @return wrapped item.
          * @since 7.6.8

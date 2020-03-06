@@ -16,7 +16,7 @@ endif::web[]
 drop-down list. The component also has a text field area, which allows entering
 search text by which the items shown in the drop-down list are filtered. Common
 selection component features are described in
-<<dummy/../../../framework/components/components-selection#components.selection,"Selection
+<<components-selection#components.selection,"Selection
 Components">>.
 
 .The [classname]#ComboBox# Component
@@ -52,7 +52,7 @@ attempt to do so may result in an exception.
 
 === Handling New Items
 
-Adding new items is handled by a [interfacename]#NewItemHandler#, which gets the
+Adding new items is handled by a [interfacename]#NewItemProvider#, which gets the
 item caption string as parameter for the [methodname]#accept(String)# method.
 
 
@@ -73,7 +73,7 @@ select.setItemCaptionGenerator(Planet::getName);
 
 // Allow adding new items and add
 // handling for new items
-select.setNewItemHandler(inputString -> {
+select.setNewItemProvider(inputString -> {
 
     Planet newPlanet = new Planet(planets.size(), inputString);
     planets.add(newPlanet);
@@ -81,8 +81,7 @@ select.setNewItemHandler(inputString -> {
     // Update combobox content
     select.setItems(planets);
 
-    // Remember to set the selection to the new item
-    select.setSelectedItem(newPlanet);
+    return Optional.of(newPlanet);
 });
 ----
 

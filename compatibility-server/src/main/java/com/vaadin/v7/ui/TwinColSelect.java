@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -173,7 +173,7 @@ public class TwinColSelect extends AbstractSelect {
     /**
      * Sets the text shown above the right column.
      *
-     * @param caption
+     * @param rightColumnCaption
      *            The text to show
      */
     public void setRightColumnCaption(String rightColumnCaption) {
@@ -193,7 +193,7 @@ public class TwinColSelect extends AbstractSelect {
     /**
      * Sets the text shown above the left column.
      *
-     * @param caption
+     * @param leftColumnCaption
      *            The text to show
      */
     public void setLeftColumnCaption(String leftColumnCaption) {

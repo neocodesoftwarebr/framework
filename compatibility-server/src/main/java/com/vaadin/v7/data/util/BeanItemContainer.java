@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,9 +15,9 @@
  */
 package com.vaadin.v7.data.util;
 
-import com.vaadin.data.provider.ListDataProvider;
-
 import java.util.Collection;
+
+import com.vaadin.data.provider.ListDataProvider;
 
 /**
  * An in-memory container for JavaBeans.
@@ -190,7 +190,8 @@ public class BeanItemContainer<BEANTYPE>
      * @param newItemId
      *            the bean (of type BT) to add (not null)
      *
-     * @see Container.Ordered#addItemAfter(Object, Object)
+     * @see com.vaadin.v7.data.Container.Ordered#addItemAfter(Object, Object)
+     *            Ordered#addItemAfter(Object, Object)
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -223,7 +224,7 @@ public class BeanItemContainer<BEANTYPE>
      *
      * The bean is used both as the item contents and as the item identifier.
      *
-     * @see Container#addItem(Object)
+     * @see com.vaadin.v7.data.Container#addItem(Object) Container#addItem(Object)
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -236,7 +237,7 @@ public class BeanItemContainer<BEANTYPE>
      *
      * The bean is used both as the item contents and as the item identifier.
      *
-     * @see Container#addItem(Object)
+     * @see com.vaadin.v7.data.Container#addItem(Object) Container#addItem(Object)
      */
     @Override
     public BeanItem<BEANTYPE> addBean(BEANTYPE bean) {

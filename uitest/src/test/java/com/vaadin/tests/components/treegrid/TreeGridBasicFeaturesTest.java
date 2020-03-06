@@ -32,7 +32,7 @@ public class TreeGridBasicFeaturesTest extends MultiBrowserTest {
     @Parameters
     public static Collection<String> getDataProviders() {
         return Arrays.asList("LazyHierarchicalDataProvider",
-                "InMemoryHierarchicalDataProvider");
+                "TreeDataProvider");
     }
 
     @Before
@@ -95,6 +95,25 @@ public class TreeGridBasicFeaturesTest extends MultiBrowserTest {
         assertEquals(3, grid.getRowCount());
         assertCellTexts(0, 0, new String[] { "0 | 0", "0 | 1", "0 | 2" });
 
+        // expand 0 | 0 recursively
+        selectMenuPath("Component", "Features", "Server-side expand",
+                "Expand 0 | 0 recursively");
+        assertEquals(15, grid.getRowCount());
+        assertCellTexts(0, 0, new String[] { "0 | 0", "1 | 0", "2 | 0" });
+
+        // collapse 0 | 0 recursively
+        selectMenuPath("Component", "Features", "Server-side collapse",
+                "Collapse 0 | 0 recursively");
+        assertEquals(3, grid.getRowCount());
+        assertCellTexts(0, 0, new String[] { "0 | 0", "0 | 1", "0 | 2" });
+
+        // expanding 0 | 0 should result in 3 additional nodes after recursive
+        // collapse
+        selectMenuPath("Component", "Features", "Server-side expand",
+                "Expand 0 | 0");
+        assertEquals(6, grid.getRowCount());
+        assertCellTexts(1, 0, new String[] { "1 | 0", "1 | 1", "1 | 2" });
+
         assertNoSystemNotifications();
         assertNoErrorNotifications();
     }
@@ -136,58 +155,86 @@ public class TreeGridBasicFeaturesTest extends MultiBrowserTest {
         new Actions(getDriver()).sendKeys(Keys.RIGHT).perform();
         assertEquals(6, grid.getRowCount());
         assertCellTexts(1, 0, new String[] { "1 | 0", "1 | 1", "1 | 2" });
-        assertTrue(
-                grid.getRow(0).hasClassName("v-treegrid-rowmode-row-focused"));
-        assertFalse(
-                grid.getRow(1).hasClassName("v-treegrid-rowmode-row-focused"));
+        assertTrue(grid.getRow(0).hasClassName("v-treegrid-row-focused"));
+        assertFalse(grid.getRow(1).hasClassName("v-treegrid-row-focused"));
 
         // Should navigate 2 times down to "1 | 1"
         new Actions(getDriver()).sendKeys(Keys.DOWN, Keys.DOWN).perform();
         assertEquals(6, grid.getRowCount());
         assertCellTexts(1, 0, new String[] { "1 | 0", "1 | 1", "1 | 2" });
-        assertFalse(
-                grid.getRow(0).hasClassName("v-treegrid-rowmode-row-focused"));
-        assertFalse(
-                grid.getRow(1).hasClassName("v-treegrid-rowmode-row-focused"));
-        assertTrue(
-                grid.getRow(2).hasClassName("v-treegrid-rowmode-row-focused"));
+        assertFalse(grid.getRow(0).hasClassName("v-treegrid-row-focused"));
+        assertFalse(grid.getRow(1).hasClassName("v-treegrid-row-focused"));
+        assertTrue(grid.getRow(2).hasClassName("v-treegrid-row-focused"));
 
         // Should expand "1 | 1" without moving focus
         new Actions(getDriver()).sendKeys(Keys.RIGHT).perform();
         assertEquals(9, grid.getRowCount());
         assertCellTexts(2, 0,
                 new String[] { "1 | 1", "2 | 0", "2 | 1", "2 | 2", "1 | 2" });
-        assertTrue(
-                grid.getRow(2).hasClassName("v-treegrid-rowmode-row-focused"));
+        assertTrue(grid.getRow(2).hasClassName("v-treegrid-row-focused"));
 
         // Should collapse "1 | 1"
         new Actions(getDriver()).sendKeys(Keys.LEFT).perform();
         assertEquals(6, grid.getRowCount());
         assertCellTexts(2, 0, new String[] { "1 | 1", "1 | 2", "0 | 1" });
-        assertTrue(
-                grid.getRow(2).hasClassName("v-treegrid-rowmode-row-focused"));
+        assertTrue(grid.getRow(2).hasClassName("v-treegrid-row-focused"));
 
         // Should navigate to "0 | 0"
         new Actions(getDriver()).sendKeys(Keys.LEFT).perform();
         assertEquals(6, grid.getRowCount());
         assertCellTexts(0, 0,
                 new String[] { "0 | 0", "1 | 0", "1 | 1", "1 | 2", "0 | 1" });
-        assertTrue(
-                grid.getRow(0).hasClassName("v-treegrid-rowmode-row-focused"));
+        assertTrue(grid.getRow(0).hasClassName("v-treegrid-row-focused"));
 
         // Should collapse "0 | 0"
         new Actions(getDriver()).sendKeys(Keys.LEFT).perform();
         assertEquals(3, grid.getRowCount());
         assertCellTexts(0, 0, new String[] { "0 | 0", "0 | 1", "0 | 2" });
-        assertTrue(
-                grid.getRow(0).hasClassName("v-treegrid-rowmode-row-focused"));
+        assertTrue(grid.getRow(0).hasClassName("v-treegrid-row-focused"));
 
         // Nothing should happen
         new Actions(getDriver()).sendKeys(Keys.LEFT).perform();
         assertEquals(3, grid.getRowCount());
         assertCellTexts(0, 0, new String[] { "0 | 0", "0 | 1", "0 | 2" });
-        assertTrue(
-                grid.getRow(0).hasClassName("v-treegrid-rowmode-row-focused"));
+        assertTrue(grid.getRow(0).hasClassName("v-treegrid-row-focused"));
+
+        assertNoErrorNotifications();
+    }
+
+    @Test
+    public void keyboard_selection() {
+        grid.getRow(0).getCell(0).click();
+
+        // Should expand "0 | 0" without moving focus
+        new Actions(getDriver()).sendKeys(Keys.RIGHT).perform();
+        assertEquals(6, grid.getRowCount());
+        assertCellTexts(1, 0, new String[] { "1 | 0", "1 | 1", "1 | 2" });
+
+        // Should navigate 2 times down to "1 | 1"
+        new Actions(getDriver()).sendKeys(Keys.DOWN, Keys.DOWN).perform();
+        assertEquals(6, grid.getRowCount());
+        assertCellTexts(1, 0, new String[] { "1 | 0", "1 | 1", "1 | 2" });
+        assertFalse(grid.getRow(0).hasClassName("v-treegrid-row-focused"));
+        assertFalse(grid.getRow(1).hasClassName("v-treegrid-row-focused"));
+        assertTrue(grid.getRow(2).hasClassName("v-treegrid-row-focused"));
+
+        // Should select "1 | 1" without moving focus
+        new Actions(getDriver()).sendKeys(Keys.SPACE).perform();
+        assertTrue(grid.getRow(2).hasClassName("v-treegrid-row-selected"));
+
+        // Should move focus but not selection
+        new Actions(getDriver()).sendKeys(Keys.UP).perform();
+        assertTrue(grid.getRow(1).hasClassName("v-treegrid-row-focused"));
+        assertFalse(grid.getRow(2).hasClassName("v-treegrid-row-focused"));
+        assertFalse(grid.getRow(1).hasClassName("v-treegrid-row-selected"));
+        assertTrue(grid.getRow(2).hasClassName("v-treegrid-row-selected"));
+
+        // Should select "1 | 0" without moving focus
+        new Actions(getDriver()).sendKeys(Keys.SPACE).perform();
+        assertTrue(grid.getRow(1).hasClassName("v-treegrid-row-focused"));
+        assertFalse(grid.getRow(2).hasClassName("v-treegrid-row-focused"));
+        assertTrue(grid.getRow(1).hasClassName("v-treegrid-row-selected"));
+        assertFalse(grid.getRow(2).hasClassName("v-treegrid-row-selected"));
 
         assertNoErrorNotifications();
     }
@@ -214,12 +261,6 @@ public class TreeGridBasicFeaturesTest extends MultiBrowserTest {
                 .isElementPresent(By.className("v-treegrid-expander")));
         assertFalse(grid.getRow(0).getCell(1)
                 .isElementPresent(By.className("v-treegrid-expander")));
-    }
-
-    @Override
-    protected boolean useNativeEventsForIE() {
-        // Fixes IE11 selectMenuPath troubles
-        return false;
     }
 
     @Test
@@ -292,6 +333,43 @@ public class TreeGridBasicFeaturesTest extends MultiBrowserTest {
         assertCellTexts(0, 0, new String[] { "0 | 0", "0 | 1", "1 | 0", "2 | 0",
                 "2 | 1", "2 | 2", "1 | 1", "1 | 2", "0 | 2" });
         assertEquals(9, grid.getRowCount());
+    }
+
+    @Test
+    public void change_renderer_of_hierarchy_column() {
+        assertTrue("Cell style names should contain renderer name", grid
+                .getCell(0, 0).getAttribute("class").contains("TextRenderer"));
+        selectMenuPath("Component", "Features", "Hierarchy column renderer",
+                "html");
+        assertTrue("Cell style names should contain renderer name", grid
+                .getCell(0, 0).getAttribute("class").contains("HtmlRenderer"));
+
+        grid.expandWithClick(0);
+        assertEquals("Not expanded", "1 | 0", grid.getCell(1, 0).getText());
+    }
+
+    @Test
+    public void disable_enable_expand_collapse() {
+        TreeGridElement treeGrid = $(TreeGridElement.class).first();
+        selectMenuPath("Component", "State", "Enabled");
+        assertTrue(treeGrid.hasClassName("v-disabled"));
+        // ensure expanding doesn't work
+        treeGrid.expandWithClick(0);
+        assertCellTexts(1, 0, new String[] { "0 | 1" });
+        selectMenuPath("Component", "State", "Enabled");
+        assertFalse(treeGrid.hasClassName("v-disabled"));
+        // ensure expanding and collapsing works again
+        treeGrid.expandWithClick(0);
+        assertCellTexts(1, 0, new String[] { "1 | 0" });
+        treeGrid.collapseWithClick(0);
+        assertCellTexts(1, 0, new String[] { "0 | 1" });
+        // same test for server-side expanding and collapsing
+        selectMenuPath("Component", "Features", "Server-side expand",
+                "Expand 0 | 0");
+        assertCellTexts(1, 0, new String[] { "1 | 0" });
+        selectMenuPath("Component", "Features", "Server-side collapse",
+                "Collapse 0 | 0");
+        assertCellTexts(1, 0, new String[] { "0 | 1" });
     }
 
     private void assertCellTexts(int startRowIndex, int cellIndex,

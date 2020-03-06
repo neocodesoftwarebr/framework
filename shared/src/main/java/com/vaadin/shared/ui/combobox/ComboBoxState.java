@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,6 +25,7 @@ import com.vaadin.shared.ui.AbstractSingleSelectState;
  * @since 7.0
  */
 public class ComboBoxState extends AbstractSingleSelectState {
+
     {
         // TODO ideally this would be v-combobox, but that would affect a lot of
         // themes
@@ -100,4 +101,18 @@ public class ComboBoxState extends AbstractSingleSelectState {
      */
     public String selectedItemIcon;
 
+    /**
+     * Filter string that is currently in use in the suggestion listing.
+     *
+     * @since 8.3.2
+     */
+    public String currentFilterText;
+
+    /**
+     * Ensure the data source is updated when backing dataprovider has been
+     * refreshed.
+     *
+     * @since 8.9
+     */
+    public boolean forceDataSourceUpdate;
 }

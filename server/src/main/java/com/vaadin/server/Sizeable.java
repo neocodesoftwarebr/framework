@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -255,19 +255,33 @@ public interface Sizeable extends Serializable {
     public void setSizeFull();
 
     /**
+     * Sets the width to 100%.
+     *
+     * @since
+     */
+    public void setWidthFull();
+
+    /**
+     * Sets the height to 100%.
+     *
+     * @since
+     */
+    public void setHeightFull();
+
+    /**
      * Clears any size settings.
      */
     public void setSizeUndefined();
 
     /**
-     * Clears any defined width
+     * Clears any defined width.
      *
      * @since 7.3
      */
     public void setWidthUndefined();
 
     /**
-     * Clears any defined height
+     * Clears any defined height.
      *
      * @since 7.3
      */

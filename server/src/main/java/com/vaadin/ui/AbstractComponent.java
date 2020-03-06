@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -29,7 +29,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
 
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Attributes;
@@ -46,7 +45,6 @@ import com.vaadin.server.AbstractClientConnector;
 import com.vaadin.server.ClientConnector;
 import com.vaadin.server.ComponentSizeValidator;
 import com.vaadin.server.ErrorMessage;
-import com.vaadin.server.ErrorMessage.ErrorLevel;
 import com.vaadin.server.Extension;
 import com.vaadin.server.Resource;
 import com.vaadin.server.Responsive;
@@ -63,6 +61,7 @@ import com.vaadin.shared.MouseEventDetails;
 import com.vaadin.shared.Registration;
 import com.vaadin.shared.ui.ComponentStateUtil;
 import com.vaadin.shared.ui.ContentMode;
+import com.vaadin.shared.ui.ErrorLevel;
 import com.vaadin.shared.util.SharedUtil;
 import com.vaadin.ui.declarative.DesignAttributeHandler;
 import com.vaadin.ui.declarative.DesignContext;
@@ -92,7 +91,7 @@ public abstract class AbstractComponent extends AbstractClientConnector
     /**
      * The internal error message of the component.
      */
-    private ErrorMessage componentError = null;
+    private ErrorMessage componentError;
 
     /**
      * Locale of this component.
@@ -195,7 +194,7 @@ public abstract class AbstractComponent extends AbstractClientConnector
      */
     @Override
     public void setStyleName(String style) {
-        if (style == null || "".equals(style)) {
+        if (style == null || style.isEmpty()) {
             getState().styles = null;
             return;
         }
@@ -222,7 +221,10 @@ public abstract class AbstractComponent extends AbstractClientConnector
 
     @Override
     public void addStyleName(String style) {
-        if (style == null || "".equals(style)) {
+        if (style == null || style.isEmpty()) {
+            return;
+        }
+        if (getState().styles != null && getState().styles.contains(style)) {
             return;
         }
         if (style.contains(" ")) {
@@ -238,9 +240,7 @@ public abstract class AbstractComponent extends AbstractClientConnector
             getState().styles = new ArrayList<>();
         }
         List<String> styles = getState().styles;
-        if (!styles.contains(style)) {
-            styles.add(style);
-        }
+        styles.add(style);
     }
 
     @Override
@@ -250,34 +250,6 @@ public abstract class AbstractComponent extends AbstractClientConnector
             while (tokenizer.hasMoreTokens()) {
                 getState().styles.remove(tokenizer.nextToken());
             }
-        }
-    }
-
-    /**
-     * Adds or removes a style name. Multiple styles can be specified as a
-     * space-separated list of style names.
-     *
-     * If the {@code add} parameter is true, the style name is added to the
-     * component. If the {@code add} parameter is false, the style name is
-     * removed from the component.
-     * <p>
-     * Functionally this is equivalent to using {@link #addStyleName(String)} or
-     * {@link #removeStyleName(String)}
-     *
-     * @since 7.5
-     * @param style
-     *            the style name to be added or removed
-     * @param add
-     *            <code>true</code> to add the given style, <code>false</code>
-     *            to remove it
-     * @see #addStyleName(String)
-     * @see #removeStyleName(String)
-     */
-    public void setStyleName(String style, boolean add) {
-        if (add) {
-            addStyleName(style);
-        } else {
-            removeStyleName(style);
         }
     }
 
@@ -426,12 +398,9 @@ public abstract class AbstractComponent extends AbstractClientConnector
             return false;
         } else if (!super.isConnectorEnabled()) {
             return false;
-        } else if (getParent() instanceof SelectiveRenderer
-                && !((SelectiveRenderer) getParent()).isRendered(this)) {
-            return false;
-        } else {
-            return true;
         }
+        return !(getParent() instanceof SelectiveRenderer)
+                || ((SelectiveRenderer) getParent()).isRendered(this);
     }
 
     /*
@@ -727,8 +696,10 @@ public abstract class AbstractComponent extends AbstractClientConnector
         ErrorMessage error = getErrorMessage();
         if (null != error) {
             getState().errorMessage = error.getFormattedHtmlMessage();
+            getState().errorLevel = error.getErrorLevel();
         } else {
             getState().errorMessage = null;
+            getState().errorLevel = null;
         }
     }
 
@@ -861,6 +832,26 @@ public abstract class AbstractComponent extends AbstractClientConnector
     @Override
     public void setSizeFull() {
         setWidth(100, Unit.PERCENTAGE);
+        setHeight(100, Unit.PERCENTAGE);
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see com.vaadin.server.Sizeable#setWidthFull()
+     */
+    @Override
+    public void setWidthFull() {
+        setWidth(100, Unit.PERCENTAGE);
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see com.vaadin.server.Sizeable#setHeightFull()
+     */
+    @Override
+    public void setHeightFull() {
         setHeight(100, Unit.PERCENTAGE);
     }
 
@@ -1253,7 +1244,7 @@ public abstract class AbstractComponent extends AbstractClientConnector
      *         implementation
      */
     protected Collection<String> getCustomAttributes() {
-        ArrayList<String> l = new ArrayList<>(Arrays.asList(customAttributes));
+        List<String> l = new ArrayList<>(Arrays.asList(CUSTOM_ATTRIBUTES));
         if (this instanceof Focusable) {
             l.add("tab-index");
             l.add("tabindex");
@@ -1261,10 +1252,10 @@ public abstract class AbstractComponent extends AbstractClientConnector
         return l;
     }
 
-    private static final String[] customAttributes = new String[] { "width",
-            "height", "debug-id", "error", "width-auto", "height-auto",
-            "width-full", "height-full", "size-auto", "size-full", "immediate",
-            "locale", "read-only", "_id" };
+    private static final String[] CUSTOM_ATTRIBUTES = { "width", "height",
+            "debug-id", "error", "width-auto", "height-auto", "width-full",
+            "height-full", "size-auto", "size-full", "immediate", "locale",
+            "read-only", "_id" };
 
     /*
      * (non-Javadoc)
@@ -1290,9 +1281,11 @@ public abstract class AbstractComponent extends AbstractClientConnector
         writeSize(attr, def);
         // handle component error
         String errorMsg = getComponentError() != null
-                ? getComponentError().getFormattedHtmlMessage() : null;
+                ? getComponentError().getFormattedHtmlMessage()
+                : null;
         String defErrorMsg = def.getComponentError() != null
-                ? def.getComponentError().getFormattedHtmlMessage() : null;
+                ? def.getComponentError().getFormattedHtmlMessage()
+                : null;
         if (!SharedUtil.equals(errorMsg, defErrorMsg)) {
             attr.put("error", errorMsg);
         }
@@ -1388,10 +1381,10 @@ public abstract class AbstractComponent extends AbstractClientConnector
         // called if there are no listeners on the server-side. A client-side
         // connector can override this and use a different RPC channel.
         if (getRpcManager(ContextClickRpc.class.getName()) == null) {
-            registerRpc((ContextClickRpc) (MouseEventDetails details) -> {
-                fireEvent(
-                        new ContextClickEvent(AbstractComponent.this, details));
-            });
+            registerRpc(
+                    (ContextClickRpc) (MouseEventDetails details) -> fireEvent(
+                            new ContextClickEvent(AbstractComponent.this,
+                                    details)));
         }
 
         return addListener(EventId.CONTEXT_CLICK, ContextClickEvent.class,
@@ -1458,7 +1451,4 @@ public abstract class AbstractComponent extends AbstractClientConnector
                         + AbstractFieldState.class.getSimpleName());
     }
 
-    private static final Logger getLogger() {
-        return Logger.getLogger(AbstractComponent.class.getName());
-    }
 }

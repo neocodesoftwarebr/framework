@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -28,7 +28,7 @@ import com.vaadin.testbench.TestBenchElement;
 import com.vaadin.testbench.elementsbase.ServerClass;
 
 @ServerClass("com.vaadin.ui.ComboBox")
-public class ComboBoxElement extends AbstractSelectElement {
+public class ComboBoxElement extends AbstractSingleSelectElement {
 
     private static org.openqa.selenium.By bySuggestionPopup = By
             .vaadin("#popup");
@@ -52,8 +52,8 @@ public class ComboBoxElement extends AbstractSelectElement {
             selectByTextFromPopup(text);
             return;
         }
-        getInputField().clear();
-        getInputField().sendKeys(text);
+        clear();
+        sendKeys(text);
 
         selectSuggestion(text);
     }
@@ -118,14 +118,14 @@ public class ComboBoxElement extends AbstractSelectElement {
     }
 
     /**
-     * Open the suggestion popup
+     * Open the suggestion popup.
      */
     public void openPopup() {
         findElement(By.vaadin("#button")).click();
     }
 
     /**
-     * Gets the text representation of all suggestions on the current page
+     * Gets the text representation of all suggestions on the current page.
      *
      * @return List of suggestion texts
      */
@@ -191,7 +191,7 @@ public class ComboBoxElement extends AbstractSelectElement {
     }
 
     /**
-     * Returns the suggestion popup element
+     * Returns the suggestion popup element.
      */
     public WebElement getSuggestionPopup() {
         ensurePopupOpen();
@@ -199,7 +199,7 @@ public class ComboBoxElement extends AbstractSelectElement {
     }
 
     /**
-     * Return value of the combo box element
+     * Return value of the combo box element.
      *
      * @return value of the combo box element
      */
@@ -231,6 +231,11 @@ public class ComboBoxElement extends AbstractSelectElement {
     @Override
     public void clear() {
         getInputField().clear();
+        String value = getText();
+        if (value != null && !value.isEmpty()) {
+            ((JavascriptExecutor) getDriver())
+                    .executeScript("arguments[0].value = ''", getInputField());
+        }
     }
 
     @Override

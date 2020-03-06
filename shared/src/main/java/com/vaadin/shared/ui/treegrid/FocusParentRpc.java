@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,12 +26,12 @@ import com.vaadin.shared.communication.ServerRpc;
 public interface FocusParentRpc extends ServerRpc {
 
     /**
-     * Focuses cell in the row parent
+     * Focuses cell in the row parent.
      *
-     * @param rowIndex
-     *            the row index
+     * @param rowKey
+     *            the row key
      * @param cellIndex
      *            the cell index
      */
-    void focusParent(int rowIndex, int cellIndex);
+    void focusParent(String rowKey, int cellIndex);
 }

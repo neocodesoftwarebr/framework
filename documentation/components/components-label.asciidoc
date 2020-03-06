@@ -94,7 +94,7 @@ will be quoted appropriately to allow rendering the contents of a label in HTML
 in a web browser. The content mode can be set in the constructor or with
 [methodname]#setContentMode()#, and can have the values defined in the
 [classname]#ContentMode# enumeration type in
-[package]#com.vaadin.shared.ui.label# package:
+[package]#com.vaadin.shared.ui# package:
 
 TEXT:: The default content mode where the label contains only plain text. All
 characters are allowed, including the special [literal]#++<++#,
@@ -122,7 +122,7 @@ content mode.
 Having [classname]#Label# in HTML content mode allows pure HTML content. If the
 content comes from user input, you should always carefully sanitize it to
 prevent cross-site scripting (XSS) attacks. Please see
-<<dummy/../../../framework/advanced/advanced-security#advanced.security.sanitizing,"Sanitizing
+<<../advanced/advanced-security#advanced.security.sanitizing,"Sanitizing
 User Input to Prevent Cross-Site Scripting">>.
 
 Also, the validity of the HTML content is not checked when rendering the

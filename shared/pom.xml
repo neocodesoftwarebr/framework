@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.vaadin</groupId>
         <artifactId>vaadin-root</artifactId>
-        <version>8.1-SNAPSHOT</version>
+        <version>8.11-SNAPSHOT</version>
     </parent>
     <artifactId>vaadin-shared</artifactId>
     <name>vaadin-shared</name>
@@ -37,6 +37,15 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>net.revelc.code.formatter</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.github.dantwining.whitespace-maven-plugin</groupId>
+                <artifactId>whitespace-maven-plugin</artifactId>
+            </plugin>
+
             <!-- Generated Version.java -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -80,6 +89,27 @@
                 </executions>
             </plugin>
 
+            <!-- Unpacked Dependencies as source -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+
+                <!-- Needs extra source folder for unpacked dependencies -->
+                <executions>
+                    <execution>
+                        <id>add-source-path</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${dependency.unpack.directory}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>

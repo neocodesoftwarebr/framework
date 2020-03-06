@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -61,7 +61,7 @@ public class JSR356WebsocketInitializer implements ServletContextListener {
 
     /**
      * "ServletConfig" which only provides information from a
-     * {@link ServletRegistration} and its {@link ServletContext}
+     * {@link ServletRegistration} and its {@link ServletContext}.
      */
     public static class FakeServletConfig implements ServletConfig {
 
@@ -104,6 +104,20 @@ public class JSR356WebsocketInitializer implements ServletContextListener {
             return;
         }
 
+        init(servletContext);
+    }
+
+    /**
+     * Initializes Atmosphere for use with Vaadin servlets found in the given
+     * context.
+     * <p>
+     * For JSR 356 websockets to work properly, the initialization must be done
+     * in the servlet context initialization phase.
+     *
+     * @param servletContext
+     *            The servlet context
+     */
+    public void init(ServletContext servletContext) {
         if (!atmosphereAvailable) {
             return;
         }
@@ -158,7 +172,7 @@ public class JSR356WebsocketInitializer implements ServletContextListener {
 
     /**
      * Returns the name of the attribute in the servlet context where the
-     * pre-initialized Atmosphere object is stored
+     * pre-initialized Atmosphere object is stored.
      *
      * @param servletName
      *            The name of the servlet
@@ -239,4 +253,13 @@ public class JSR356WebsocketInitializer implements ServletContextListener {
         }
     }
 
+    /**
+     * Checks if Atmosphere is available on the classpath.
+     *
+     * @return <code>true</code> if Atmosphere is available, <code>false</code>
+     *         otherwise
+     */
+    public static boolean isAtmosphereAvailable() {
+        return atmosphereAvailable;
+    }
 }

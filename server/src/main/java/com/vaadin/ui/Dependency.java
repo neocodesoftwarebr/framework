@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -158,7 +158,7 @@ public class Dependency implements Serializable {
      * @return the list of found dependencies
      */
     @SuppressWarnings("deprecation")
-    public static List<Dependency> findDependencies(
+    private static List<Dependency> findDependencies(
             List<Class<? extends ClientConnector>> connectorTypes,
             LegacyCommunicationManager manager) {
         List<Dependency> dependencies = new ArrayList<>();
@@ -191,7 +191,7 @@ public class Dependency implements Serializable {
      *            the context information for the filtering operation
      * @return the list of found and filtered dependencies
      */
-    public static List<Dependency> findAndFilterDependencies(
+    public static List<Dependency> findDependencies(
             List<Class<? extends ClientConnector>> connectorTypes,
             LegacyCommunicationManager manager, FilterContext context) {
         List<Dependency> dependencies = findDependencies(connectorTypes,

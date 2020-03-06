@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -221,6 +221,22 @@ public interface RowContainer {
     public int getRowCount();
 
     /**
+     * This method calculates the current row count directly from the DOM.
+     * <p>
+     * While the container is stable, this value should equal to
+     * {@link #getRowCount()}, but while row counts are being updated, these two
+     * values might differ for a short while.
+     * <p>
+     * Any extra content, such as spacers for the body, should not be included
+     * in this count.
+     *
+     * @since 8.7
+     *
+     * @return the actual DOM count of rows
+     */
+    public int getDomRowCount();
+
+    /**
      * The default height of the rows in this RowContainer.
      *
      * @param px
@@ -273,7 +289,7 @@ public interface RowContainer {
             throws IndexOutOfBoundsException, IllegalStateException;
 
     /**
-     * Returns the root element of RowContainer
+     * Returns the root element of RowContainer.
      *
      * @return RowContainer root element
      */

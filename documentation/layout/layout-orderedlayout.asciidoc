@@ -152,7 +152,7 @@ optional spacing).
 [source, java]
 ----
 HorizontalLayout fittingLayout = new HorizontalLayout();
-fittingLayout.setWidth(Sizeable.SIZE_UNDEFINED, 0); // Default
+fittingLayout.setWidthUndefined(); // Default, can be omitted
 fittingLayout.setSpacing(false); // Compact layout
 fittingLayout.addComponent(new Button("Small"));
 fittingLayout.addComponent(new Button("Medium-sized"));
@@ -178,7 +178,7 @@ the component would fill the space given by the layout, while the layout would
 shrink to fit the space taken by the component, which would be a paradox. This
 requirement holds for height and width separately. The debug window allows
 detecting such invalid cases; see
-<<dummy/../../../framework/advanced/advanced-debug#advanced.debug.hierarchy,"Inspecting
+<<../advanced/advanced-debug#advanced.debug.hierarchy,"Inspecting
 Component Hierarchy">>.
 
 ====

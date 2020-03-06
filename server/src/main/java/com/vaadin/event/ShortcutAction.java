@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -141,15 +141,16 @@ public class ShortcutAction extends Action {
      * Insert one or more modifier characters before the character to use as
      * keycode. E.g <code>"&Save"</code> will make a shortcut responding to
      * ALT-S, <code>"E^xit"</code> will respond to CTRL-X.<br/>
-     * Multiple modifiers can be used, e.g <code>"&amp;^Delete"</code> will respond
-     * to CTRL-ALT-D (the order of the modifier characters is not important).
+     * Multiple modifiers can be used, e.g <code>"&amp;^Delete"</code> will
+     * respond to CTRL-ALT-D (the order of the modifier characters is not
+     * important).
      * </p>
      * <p>
      * The modifier characters will be removed from the caption. The modifier
      * character is be escaped by itself: two consecutive characters are turned
      * into the original character w/o the special meaning. E.g
-     * <code>"Save&amp;&amp;&amp;close"</code> will respond to ALT-C, and the caption will
-     * say "Save&amp;close".
+     * <code>"Save&amp;&amp;&amp;close"</code> will respond to ALT-C, and the
+     * caption will say "Save&amp;close".
      * </p>
      *
      * @param shorthandCaption
@@ -255,7 +256,7 @@ public class ShortcutAction extends Action {
     }
 
     /**
-     * Key codes that can be used for shortcuts
+     * Key codes that can be used for shortcuts.
      *
      */
     public interface KeyCode extends Serializable {
@@ -384,10 +385,48 @@ public class ShortcutAction extends Action {
         public static final int NUM9 = 57;
 
         public static final int SPACEBAR = 32;
+
+        public static final int NUMPAD0 = 96;
+
+        public static final int NUMPAD1 = 97;
+
+        public static final int NUMPAD2 = 98;
+
+        public static final int NUMPAD3 = 99;
+
+        public static final int NUMPAD4 = 100;
+
+        public static final int NUMPAD5 = 101;
+
+        public static final int NUMPAD6 = 102;
+
+        public static final int NUMPAD7 = 103;
+
+        public static final int NUMPAD8 = 104;
+
+        public static final int NUMPAD9 = 105;
+
+        public static final int NUMPAD_MULTIPLY = 106;
+
+        public static final int NUMPAD_PLUS = 107;
+
+        public static final int NUMPAD_MINUS = 109;
+
+        public static final int NUMPAD_PERIOD = 110;
+
+        public static final int NUMPAD_DIVISION = 111;
+
+        public static final int NUMLOCK = 144;
+
+        public static final int SCROLL_LOCK = 145;
+
+        public static final int CONTEXT_MENU = 93;
+
+        public static final int PAUSE = 19;
     }
 
     /**
-     * Modifier key constants
+     * Modifier key constants.
      *
      */
     public interface ModifierKey extends Serializable {
@@ -398,5 +437,9 @@ public class ShortcutAction extends Action {
         public static final int ALT = 18;
 
         public static final int META = 91;
+
+        public static final int WINDOWS_LEFT = 224;
+
+        public static final int WINDOWS_RIGHT = 92;
     }
 }

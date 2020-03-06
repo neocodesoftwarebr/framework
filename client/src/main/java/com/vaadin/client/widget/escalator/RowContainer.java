@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -75,6 +75,17 @@ public interface RowContainer {
                 throws IllegalArgumentException;
 
         /**
+         * Checks whether the given rowIndex contains a spacer.
+         *
+         * @param rowIndex
+         *            the row index for the queried spacer.
+         * @return {@code true} if spacer for given row index exists,
+         *         {@code false} otherwise
+         * @since 8.9
+         */
+        boolean spacerExists(int rowIndex);
+
+        /**
          * Sets a new spacer updater.
          * <p>
          * Spacers that are currently visible will be updated, i.e.
@@ -121,6 +132,20 @@ public interface RowContainer {
                 throws IndexOutOfBoundsException, IllegalArgumentException;
 
         /**
+         * Recalculates and updates the positions of rows and spacers within the
+         * given range and ensures there is no gap below the rows if there are
+         * enough rows to fill the space. Recalculates the scrollbars for
+         * virtual viewport.
+         *
+         * @param index
+         *            logical index of the first row to reposition
+         * @param numberOfRows
+         *            the number of rows to reposition
+         * @since 8.9
+         */
+        public void updateRowPositions(int index, int numberOfRows);
+
+        /**
          * Sets a callback function that is executed when new rows are added to
          * the escalator.
          *
@@ -129,8 +154,7 @@ public interface RowContainer {
          *            row elements.
          * @since 8.1
          */
-        public void setNewEscalatorRowCallback(
-                Consumer<List<TableRowElement>> consumer);
+        public void setNewRowCallback(Consumer<List<TableRowElement>> consumer);
     }
 
     /**
@@ -237,6 +261,14 @@ public interface RowContainer {
     public int getRowCount();
 
     /**
+     * For internal use only. May be removed or replaced in the future.
+     *
+     * @since 8.7
+     * @return {@code true} if row height calculations have been scheduled
+     */
+    public boolean isAutodetectingRowHeightLater();
+
+    /**
      * The default height of the rows in this RowContainer.
      *
      * @param px
@@ -289,7 +321,7 @@ public interface RowContainer {
             throws IndexOutOfBoundsException, IllegalStateException;
 
     /**
-     * Returns the root element of RowContainer
+     * Returns the root element of RowContainer.
      *
      * @return RowContainer root element
      */

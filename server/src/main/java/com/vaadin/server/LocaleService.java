@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,9 +14,6 @@
  * the License.
  */
 
-/**
- *
- */
 package com.vaadin.server;
 
 import java.io.Serializable;
@@ -46,7 +43,7 @@ public class LocaleService implements Serializable {
     private final LocaleServiceState state;
 
     /**
-     * Creates a LocaleService bound to the given UI
+     * Creates a LocaleService bound to the given UI.
      *
      * @since 7.1
      * @param ui
@@ -58,7 +55,7 @@ public class LocaleService implements Serializable {
     }
 
     /**
-     * Retrieves the UI this service is bound to
+     * Retrieves the UI this service is bound to.
      *
      * @since 7.1
      * @return the UI for this service
@@ -110,7 +107,7 @@ public class LocaleService implements Serializable {
     }
 
     /**
-     * Creates a LocaleData instance for transportation to the client
+     * Creates a LocaleData instance for transportation to the client.
      *
      * @since 7.1
      * @param locale
@@ -152,7 +149,7 @@ public class LocaleService implements Serializable {
         /*
          * First day of week (0 = sunday, 1 = monday)
          */
-        final java.util.Calendar cal = new GregorianCalendar(locale);
+        final Calendar cal = new GregorianCalendar(locale);
         localeData.firstDayOfWeek = cal.getFirstDayOfWeek() - 1;
 
         /*
@@ -177,15 +174,15 @@ public class LocaleService implements Serializable {
 
         localeData.dateFormat = datePattern.trim();
 
-        final boolean twelve_hour_clock = timePattern.indexOf("a") > -1;
+        final boolean twelveHourClock = timePattern.indexOf("a") > -1;
         // TODO there are other possibilities as well, like 'h' in french
         // (ignore them, too complicated)
-        final String hour_min_delimiter = timePattern.indexOf(".") > -1 ? "."
+        final String hourMinDelimiter = timePattern.indexOf(".") > -1 ? "."
                 : ":";
 
-        localeData.twelveHourClock = twelve_hour_clock;
-        localeData.hourMinuteDelimiter = hour_min_delimiter;
-        if (twelve_hour_clock) {
+        localeData.twelveHourClock = twelveHourClock;
+        localeData.hourMinuteDelimiter = hourMinDelimiter;
+        if (twelveHourClock) {
             final String[] ampm = dfs.getAmPmStrings();
             localeData.am = ampm[0];
             localeData.pm = ampm[1];

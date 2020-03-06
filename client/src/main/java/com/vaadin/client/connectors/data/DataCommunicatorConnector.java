@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,6 +18,7 @@ package com.vaadin.client.connectors.data;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.vaadin.client.ServerConnector;
@@ -63,7 +64,7 @@ public class DataCommunicatorConnector extends AbstractExtensionConnector {
 
                         @Override
                         public void setData(int firstIndex, JsonArray data) {
-                            ArrayList<JsonObject> rows = new ArrayList<>(
+                            List<JsonObject> rows = new ArrayList<>(
                                     data.length());
                             for (int i = 0; i < data.length(); i++) {
                                 JsonObject rowObject = data.getObject(i);

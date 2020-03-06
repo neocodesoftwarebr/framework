@@ -106,7 +106,7 @@ have the following features:
 * The [literal]#++<div>++# element must have an [literal]#++id++# attribute, which must be a unique ID in the page, normally something that identifies the servlet of the UI uniquely.
 * It must have at least the [literal]#++v-app++# style class.
 * it should have a nested [literal]#++<div>++# element with [literal]#++v-app-loading++# style class. This is a placeholder for the loading indicator that is displayed while the UI is being loaded.
-* It should also contain a [literal]#++<noscript>++# element that is shown if the browser does not support JavaScript or it has been disabled. The content of the element should instruct the use to enable JavaScript in the browser.
+* It should also contain a [literal]#++<noscript>++# element that is shown if the browser does not support JavaScript or it has been disabled. The content of the element should instruct the user to enable JavaScript in the browser.
 
 The placeholder element can include style settings, typically a width and
 height. If the sizes are not defined, the UI will have an undefined size in the
@@ -136,7 +136,7 @@ you should check that the bootstrap script was loaded properly.
 
 [subs="normal"]
 ----
-&lt;script type="text/javascript"&gt;//&lt;![CDATA[
+&lt;script type="text/javascript"&gt;//&lt;!\[CDATA[
   if (!window.vaadin)
       alert("[replaceable]#Failed to load the bootstrap JavaScript:#"+
             "[replaceable]#VAADIN/vaadinBootstrap.js#");
@@ -167,8 +167,8 @@ future.+
 [parameter]#theme#:: Name of the theme, such as one of the built-in themes ( [literal]#++reindeer++#, [literal]#++runo++#, or [literal]#++chameleon++#) or a custom theme. It must exist under the [filename]#VAADIN/themes# folder.
 [parameter]#versionInfo#:: This parameter is itself an associative map that can contain two parameters: [parameter]#vaadinVersion# contains the version number of the Vaadin version used by the application. The [parameter]#applicationVersion# parameter contains the version of the particular application. The contained parameters are optional, but the [parameter]#versionInfo# parameter itself is not.
 [parameter]#vaadinDir#:: Relative path to the [filename]#VAADIN# directory. It is relative to the URL of the embedding page.
-[parameter]#heartbeatInterval#:: The [parameter]#hearbeatInterval# parameter defines the frequency of the keep-alive hearbeat for the UI in seconds, as described in <<dummy/../../../framework/application/application-lifecycle#application.lifecycle.ui-expiration,"UI Expiration">>.
-[parameter]#debug#:: The parameter defines whether the debug window, as described in <<dummy/../../../framework/advanced/advanced-debug#advanced.debug,"Debug Mode and Window">>, is enabled.
+[parameter]#heartbeatInterval#:: The [parameter]#hearbeatInterval# parameter defines the frequency of the keep-alive hearbeat for the UI in seconds, as described in <<../application/application-lifecycle#application.lifecycle.ui-expiration,"UI Expiration">>.
+[parameter]#debug#:: The parameter defines whether the debug window, as described in <<../advanced/advanced-debug#advanced.debug,"Debug Mode and Window">>, is enabled.
 [parameter]#standalone#:: This parameter should be [parameter]#false# when embedding. The parameter defines whether the UI is rendered on its own in the browser window or in some context. A standalone UI may do things that might interfere with other parts of the page, such as change the page title and request focus when it is loaded. When embedding, the UI is not standalone.
 [parameter]#authErrMsg#,[parameter]#comErrMsg#, and[parameter]#sessExpMsg#:: These three parameters define the client-side error messages for authentication error, communication error, and session expiration, respectively. The parameters are associative maps themselves and must contain two key-value pairs: [parameter]#message#, which should contain the error text in HTML, and [parameter]#caption#, which should be the error caption.
 
@@ -182,7 +182,7 @@ For example:
       "serviceUrl": "[replaceable]#helloworld#/",
       "widgetset": "[replaceable]#com.example.MyWidgetSet#",
       "theme": "[replaceable]#mytheme#",
-      "versionInfo": {"vaadinVersion": "[replaceable]#7.0.0#"},
+      "versionInfo": {"vaadinVersion": "[replaceable]#8.1.6#"},
       "vaadinDir": "[replaceable]#VAADIN/#",
       "heartbeatInterval": [replaceable]#300#,
       "debug": [replaceable]#true#,
@@ -204,7 +204,7 @@ For example:
 ----
 Notice that many of the parameters are normally deployment parameters, specified
 in the deployment descriptor, as described in
-<<dummy/../../../framework/application/application-environment#application.environment.parameters,"Other
+<<../application/application-environment#application.environment.parameters,"Other
 Servlet Configuration Parameters">>.
 
 endif::web[]
@@ -271,7 +271,7 @@ element.
 	    "serviceUrl": "helloworld/",
 	    "widgetset": "com.example.MyWidgetSet",
 	    "theme": "mytheme",
-	    "versionInfo": {"vaadinVersion": "7.0.0"},
+	    "versionInfo": {"vaadinVersion": "8.1.6"},
 	    "vaadinDir": "VAADIN/",
 	    "heartbeatInterval": 300,
 	    "debug": true,

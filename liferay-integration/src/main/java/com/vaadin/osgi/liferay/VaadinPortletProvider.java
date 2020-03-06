@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,13 +17,14 @@ package com.vaadin.osgi.liferay;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceObjects;
-import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.log.LogService;
 import org.osgi.util.tracker.ServiceTracker;
 
-import com.vaadin.osgi.resources.OSGiVaadinResources;
 import com.vaadin.osgi.resources.VaadinResourceService;
 import com.vaadin.ui.UI;
 
@@ -37,22 +38,43 @@ import com.vaadin.ui.UI;
  *
  * @since 8.1
  */
-@Component(immediate = true)
+@Component
 public class VaadinPortletProvider {
 
     private ServiceTracker<UI, ServiceObjects<UI>> serviceTracker;
     private PortletUIServiceTrackerCustomizer portletUIServiceTrackerCustomizer;
+    private VaadinResourceService vaadinService;
+    private LogService logService;
 
     @Activate
-    void activate(ComponentContext componentContext) throws Exception {
-        BundleContext bundleContext = componentContext.getBundleContext();
-        VaadinResourceService service = OSGiVaadinResources.getService();
-
+    void activate(BundleContext bundleContext) throws Exception {
         portletUIServiceTrackerCustomizer = new PortletUIServiceTrackerCustomizer(
-                service);
+                vaadinService, logService);
         serviceTracker = new ServiceTracker<UI, ServiceObjects<UI>>(
                 bundleContext, UI.class, portletUIServiceTrackerCustomizer);
         serviceTracker.open();
+    }
+    
+    @Reference
+    void setVaadinResourceService(VaadinResourceService vaadinService) {
+        this.vaadinService = vaadinService;
+    }
+    
+    void unsetVaadinResourceService(VaadinResourceService vaadinService) {
+        if(this.vaadinService == vaadinService) {
+            this.vaadinService = null;
+        }
+    }
+
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL)
+    void setLogService(LogService logService) {
+        this.logService = logService;
+    }
+
+    void unsetLogService(LogService logService) {
+        if(this.logService == logService) {
+            this.logService = null;
+        }
     }
 
     @Deactivate
@@ -62,6 +84,5 @@ public class VaadinPortletProvider {
             portletUIServiceTrackerCustomizer.cleanPortletRegistrations();
             portletUIServiceTrackerCustomizer = null;
         }
-
     }
 }

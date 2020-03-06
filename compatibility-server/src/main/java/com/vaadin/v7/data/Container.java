@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -433,9 +433,12 @@ public interface Container extends Serializable {
      * change the internal order of items in the container.
      * </p>
      *
-     * @deprecated  As of 8.0, sorting is integrated into {@link DataProvider} and {@link Query#getSortOrders()}.
-     * For in-memory case, you can use also {@link ListDataProvider#setSortComparator(SerializableComparator)}.
-     * For back-end DataProviders, see {@link AbstractBackEndDataProvider#setSortOrders(List)}.
+     * @deprecated As of 8.0, sorting is integrated into {@link DataProvider}
+     *             and {@link Query#getSortOrders()}. For in-memory case, you
+     *             can use also
+     *             {@link ListDataProvider#setSortComparator(SerializableComparator)}.
+     *             For back-end DataProviders, see
+     *             {@link AbstractBackEndDataProvider#setSortOrders(List)}.
      */
     @Deprecated
     public interface Sortable extends Ordered {
@@ -672,8 +675,7 @@ public interface Container extends Serializable {
      * unable to have children.
      * </ul>
      *
-     * @deprecated As of 8.0, no replacement available yet. A new hierarchical data API is planned in an upcoming
-     * version of Vaadin Framework 8.
+     * @deprecated See {@code HierarchicalDataProvider} and its implementations.
      */
     @Deprecated
     public interface Hierarchical extends Container {
@@ -872,7 +874,7 @@ public interface Container extends Serializable {
      * @since 5.0 (renamed from Filterable to SimpleFilterable in 6.6)
      */
     @Deprecated
-    public interface SimpleFilterable extends Container, Serializable {
+    public interface SimpleFilterable extends Container {
 
         /**
          * Add a filter for given property.
@@ -936,9 +938,11 @@ public interface Container extends Serializable {
      *
      * @since 6.6
      *
-     * @deprecated  As of 8.0, the whole filtering feature is integrated into {@link DataProvider}.
-     * For in-memory case ({@link ListDataProvider}), use predicates as filters. For back-end DataProviders,
-     * filters are specific to the implementation.
+     * @deprecated As of 8.0, the whole filtering feature is integrated into
+     *             {@link DataProvider}. For in-memory case
+     *             ({@link ListDataProvider}), use predicates as filters. For
+     *             back-end DataProviders, filters are specific to the
+     *             implementation.
      */
     @Deprecated
     public interface Filter extends Serializable {
@@ -1014,7 +1018,7 @@ public interface Container extends Serializable {
      * @since 6.6
      */
     @Deprecated
-    public interface Filterable extends Container, Serializable {
+    public interface Filterable extends Container {
         /**
          * Adds a filter for the container.
          * <p>
@@ -1041,7 +1045,7 @@ public interface Container extends Serializable {
         public void removeAllContainerFilters();
 
         /**
-         * Returns the filters which have been applied to the container
+         * Returns the filters which have been applied to the container.
          *
          * @return A collection of filters which have been applied to the
          *         container. An empty collection if no filters have been
@@ -1088,7 +1092,7 @@ public interface Container extends Serializable {
      * </p>
      */
     @Deprecated
-    public interface Editor extends Container.Viewer, Serializable {
+    public interface Editor extends Container.Viewer {
 
     }
 
@@ -1163,7 +1167,7 @@ public interface Container extends Serializable {
         /**
          * @deprecated As of 7.0, replaced by
          *             {@link #addItemSetChangeListener(ItemSetChangeListener)}
-         **/
+         */
         @Deprecated
         public void addListener(Container.ItemSetChangeListener listener);
 
@@ -1179,7 +1183,7 @@ public interface Container extends Serializable {
         /**
          * @deprecated As of 7.0, replaced by
          *             {@link #removeItemSetChangeListener(ItemSetChangeListener)}
-         **/
+         */
         @Deprecated
         public void removeListener(Container.ItemSetChangeListener listener);
     }
@@ -1268,7 +1272,7 @@ public interface Container extends Serializable {
         /**
          * @deprecated As of 7.0, replaced by
          *             {@link #addPropertySetChangeListener(PropertySetChangeListener)}
-         **/
+         */
         @Deprecated
         public void addListener(Container.PropertySetChangeListener listener);
 
@@ -1284,7 +1288,7 @@ public interface Container extends Serializable {
         /**
          * @deprecated As of 7.0, replaced by
          *             {@link #removePropertySetChangeListener(PropertySetChangeListener)}
-         **/
+         */
         @Deprecated
         public void removeListener(
                 Container.PropertySetChangeListener listener);

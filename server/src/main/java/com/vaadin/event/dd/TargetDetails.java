@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,7 +17,7 @@ package com.vaadin.event.dd;
 
 import java.io.Serializable;
 
-import com.vaadin.event.dnd.DropEvent;
+import com.vaadin.ui.dnd.event.DropEvent;
 
 /**
  * TargetDetails wraps drop target related information about
@@ -35,7 +35,7 @@ import com.vaadin.event.dnd.DropEvent;
 public interface TargetDetails extends Serializable {
 
     /**
-     * Gets target data associated with the given string key
+     * Gets target data associated with the given string key.
      *
      * @param key
      * @return The data associated with the key

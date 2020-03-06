@@ -16,8 +16,8 @@ import com.vaadin.ui.Label;
 import com.vaadin.ui.Layout;
 
 public class GridLayoutTest {
-    Component[] children = new Component[] { new Label("A"), new Label("B"),
-            new Label("C"), new Label("D") };
+    Component[] children = { new Label("A"), new Label("B"), new Label("C"),
+            new Label("D") };
 
     @Test
     public void testConstructorWithComponents() {
@@ -97,6 +97,30 @@ public class GridLayoutTest {
         gl.setColumns(2);
         assertEquals(0, gl.getColumnExpandRatio(0), 0);
         assertEquals(1, gl.getColumnExpandRatio(1), 0);
+    }
+
+    @Test
+    public void verifyOutOfBoundsExceptionContainsHelpfulMessage() {
+        GridLayout grid = new GridLayout(1, 1);
+        try {
+            grid.addComponent(new Label(), 3, 3);
+            fail("Should have failed");
+        } catch (GridLayout.OutOfBoundsException ex) {
+            assertEquals("Area{3,3 - 3,3}, layout dimension: 1x1",
+                    ex.getMessage());
+        }
+    }
+
+    @Test
+    public void verifyAddComponentFailsWithHelpfulMessageOnInvalidArgs() {
+        GridLayout grid = new GridLayout(6, 6);
+        try {
+            grid.addComponent(new Label(), 3, 3, 2, 2);
+            fail("Should have failed");
+        } catch (IllegalArgumentException ex) {
+            assertEquals("Illegal coordinates for the component: 3!<=2, 3!<=2",
+                    ex.getMessage());
+        }
     }
 
     private void assertContentPositions(GridLayout grid) {

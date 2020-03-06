@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -23,11 +23,8 @@ import com.vaadin.client.Profiler;
 import com.vaadin.client.annotations.OnStateChange;
 import com.vaadin.client.communication.StateChangeEvent;
 import com.vaadin.client.connectors.AbstractListingConnector;
-import com.vaadin.client.connectors.data.HasDataSource;
 import com.vaadin.client.data.DataChangeHandler;
 import com.vaadin.client.data.DataSource;
-import com.vaadin.client.ui.HasErrorIndicator;
-import com.vaadin.client.ui.HasRequiredIndicator;
 import com.vaadin.client.ui.SimpleManagedLayout;
 import com.vaadin.client.ui.VComboBox;
 import com.vaadin.client.ui.VComboBox.ComboBoxSuggestion;
@@ -38,6 +35,7 @@ import com.vaadin.shared.communication.FieldRpc.FocusAndBlurServerRpc;
 import com.vaadin.shared.data.DataCommunicatorConstants;
 import com.vaadin.shared.data.selection.SelectionServerRpc;
 import com.vaadin.shared.ui.Connect;
+import com.vaadin.shared.ui.combobox.ComboBoxClientRpc;
 import com.vaadin.shared.ui.combobox.ComboBoxConstants;
 import com.vaadin.shared.ui.combobox.ComboBoxServerRpc;
 import com.vaadin.shared.ui.combobox.ComboBoxState;
@@ -47,8 +45,7 @@ import elemental.json.JsonObject;
 
 @Connect(ComboBox.class)
 public class ComboBoxConnector extends AbstractListingConnector
-        implements HasRequiredIndicator, HasDataSource, SimpleManagedLayout,
-        HasErrorIndicator {
+        implements SimpleManagedLayout {
 
     private ComboBoxServerRpc rpc = getRpcProxy(ComboBoxServerRpc.class);
     private SelectionServerRpc selectionRpc = getRpcProxy(
@@ -59,10 +56,35 @@ public class ComboBoxConnector extends AbstractListingConnector
 
     private Registration dataChangeHandlerRegistration;
 
+    /**
+     * new item value that has been sent to server but selection handling hasn't
+     * been performed for it yet
+     */
+    private String pendingNewItemValue = null;
+
+    /**
+     * If this flag is toggled, even unpaged data sources should be updated on
+     * reset.
+     */
+    private boolean forceDataSourceUpdate = false;
+
+    private boolean initialSelectionChangePending = true;
+
     @Override
     protected void init() {
         super.init();
         getWidget().connector = this;
+        registerRpc(ComboBoxClientRpc.class, new ComboBoxClientRpc() {
+            @Override
+            public void newItemNotAdded(String itemValue) {
+                if (itemValue != null && itemValue.equals(pendingNewItemValue)
+                        && isNewItemStillPending()) {
+                    // handled but not added, perform (de-)selection handling
+                    // immediately
+                    completeNewItemHandling();
+                }
+            }
+        });
     }
 
     @Override
@@ -71,29 +93,30 @@ public class ComboBoxConnector extends AbstractListingConnector
 
         Profiler.enter("ComboBoxConnector.onStateChanged update content");
 
-        getWidget().readonly = isReadOnly();
-        getWidget().updateReadOnly();
+        VComboBox widget = getWidget();
+        widget.readonly = isReadOnly();
+        widget.updateReadOnly();
 
         // not a FocusWidget -> needs own tabindex handling
-        getWidget().tb.setTabIndex(getState().tabIndex);
+        widget.tb.setTabIndex(getState().tabIndex);
 
-        getWidget().suggestionPopup.updateStyleNames(getState());
+        widget.suggestionPopup.updateStyleNames(getState());
 
         // TODO if the pop up is opened, the actual item should be removed from
         // the popup (?)
-        getWidget().nullSelectionAllowed = getState().emptySelectionAllowed;
+        widget.nullSelectionAllowed = getState().emptySelectionAllowed;
         // TODO having this true would mean that the empty selection item comes
         // from the data source so none needs to be added - currently
         // unsupported
-        getWidget().nullSelectItem = false;
+        widget.nullSelectItem = false;
 
         // make sure the input prompt is updated
-        getWidget().updatePlaceholder();
+        widget.updatePlaceholder();
 
         getDataReceivedHandler().serverReplyHandled();
 
         // all updates except options have been done
-        getWidget().initDone = true;
+        widget.initDone = true;
 
         Profiler.leave("ComboBoxConnector.onStateChanged update content");
     }
@@ -105,10 +128,29 @@ public class ComboBoxConnector extends AbstractListingConnector
             suggestions.remove(0);
             addEmptySelectionItem();
         }
+        getWidget().setEmptySelectionCaption(getState().emptySelectionCaption);
     }
 
-    @OnStateChange({ "selectedItemKey", "selectedItemCaption", "selectedItemIcon" })
+    @OnStateChange("forceDataSourceUpdate")
+    private void onForceDataSourceUpdate() {
+        forceDataSourceUpdate = getState().forceDataSourceUpdate;
+    }
+
+    @OnStateChange({ "selectedItemKey", "selectedItemCaption",
+            "selectedItemIcon" })
     private void onSelectionChange() {
+        if (getWidget().selectedOptionKey != getState().selectedItemKey) {
+            if (initialSelectionChangePending) {
+                getWidget().selectedOptionKey = getState().selectedItemKey;
+            } else {
+                getWidget().selectedOptionKey = null;
+                getWidget().currentSuggestion = null;
+            }
+            initialSelectionChangePending = false;
+        }
+
+        clearNewItemHandlingIfMatch(getState().selectedItemCaption);
+
         getDataReceivedHandler().updateSelectionFromServer(
                 getState().selectedItemKey, getState().selectedItemCaption,
                 getState().selectedItemIcon);
@@ -159,8 +201,14 @@ public class ComboBoxConnector extends AbstractListingConnector
      *            user entered string value for the new item
      */
     public void sendNewItem(String itemValue) {
-        rpc.createNewItem(itemValue);
-        getDataReceivedHandler().clearPendingNavigation();
+        if (itemValue != null && !itemValue.equals(pendingNewItemValue)) {
+            // clear any previous handling as outdated
+            clearNewItemHandling();
+
+            pendingNewItemValue = itemValue;
+            rpc.createNewItem(itemValue);
+            getDataReceivedHandler().clearPendingNavigation();
+        }
     }
 
     /**
@@ -174,11 +222,24 @@ public class ComboBoxConnector extends AbstractListingConnector
      *            the current filter string
      */
     protected void setFilter(String filter) {
-        if (!Objects.equals(filter, getWidget().lastFilter)) {
+        if (!Objects.equals(filter, getState().currentFilterText)) {
             getDataReceivedHandler().clearPendingNavigation();
 
             rpc.setFilter(filter);
         }
+    }
+
+    /**
+     * Confirm with the widget that the pending new item value is still pending.
+     *
+     * This method is for internal use only and may be removed in future
+     * versions.
+     *
+     * @return {@code true} if the value is still pending, {@code false} if
+     *         there is no pending value or it doesn't match
+     */
+    private boolean isNewItemStillPending() {
+        return getDataReceivedHandler().isPending(pendingNewItemValue);
     }
 
     /**
@@ -204,15 +265,14 @@ public class ComboBoxConnector extends AbstractListingConnector
                 // TODO this should be optimized not to try to fetch everything
                 getDataSource().ensureAvailability(0, getDataSource().size());
                 return;
-            } else {
-                page = 0;
             }
+            page = 0;
         }
-        int adjustment = getWidget().nullSelectionAllowed && "".equals(filter)
-                ? 1 : 0;
-        int startIndex = Math.max(0,
-                page * getWidget().pageLength - adjustment);
-        int pageLength = getWidget().pageLength > 0 ? getWidget().pageLength
+        VComboBox widget = getWidget();
+        int adjustment = widget.nullSelectionAllowed && filter.isEmpty() ? 1
+                : 0;
+        int startIndex = Math.max(0, page * widget.pageLength - adjustment);
+        int pageLength = widget.pageLength > 0 ? widget.pageLength
                 : getDataSource().size();
         getDataSource().ensureAvailability(startIndex, pageLength);
     }
@@ -316,7 +376,7 @@ public class ComboBoxConnector extends AbstractListingConnector
 
         updateSuggestions(start, end);
         getWidget().setTotalSuggestions(getDataSource().size());
-
+        getWidget().resetLastNewItemString();
         getDataReceivedHandler().dataReceived();
     }
 
@@ -378,6 +438,55 @@ public class ComboBoxConnector extends AbstractListingConnector
         }
     }
 
+    /**
+     * If previous calls to refreshData haven't sorted out the selection yet,
+     * enforce it.
+     *
+     * This method is for internal use only and may be removed in future
+     * versions.
+     */
+    private void completeNewItemHandling() {
+        // ensure the widget hasn't got a new selection in the meantime
+        if (isNewItemStillPending()) {
+            // mark new item for selection handling on the widget
+            getWidget().suggestionPopup.menu
+                    .markNewItemsHandled(pendingNewItemValue);
+            // clear pending value
+            pendingNewItemValue = null;
+            // trigger the final selection handling
+            refreshData();
+        } else {
+            clearNewItemHandling();
+        }
+    }
+
+    /**
+     * Clears the pending new item value if the widget's pending value no longer
+     * matches.
+     *
+     * This method is for internal use only and may be removed in future
+     * versions.
+     */
+    private void clearNewItemHandling() {
+        pendingNewItemValue = null;
+    }
+
+    /**
+     * Clears the new item handling variables if the given value matches the
+     * pending value.
+     *
+     * This method is for internal use only and may be removed in future
+     * versions.
+     *
+     * @param value
+     *            already handled value
+     */
+    public void clearNewItemHandlingIfMatch(String value) {
+        if (value != null && value.equals(pendingNewItemValue)) {
+            pendingNewItemValue = null;
+        }
+    }
+
     private static final Logger LOGGER = Logger
             .getLogger(ComboBoxConnector.class.getName());
 
@@ -412,8 +521,12 @@ public class ComboBoxConnector extends AbstractListingConnector
         @Override
         public void resetDataAndSize(int estimatedNewDataSize) {
             if (getState().pageLength == 0) {
-                if (getWidget().suggestionPopup.isShowing()) {
+                if (getWidget().suggestionPopup.isShowing()
+                        || forceDataSourceUpdate) {
                     dataSource.ensureAvailability(0, estimatedNewDataSize);
+                }
+                if (forceDataSourceUpdate) {
+                    rpc.resetForceDataSourceUpdate();
                 }
                 // else lets just wait till the popup is opened before
                 // everything is fetched to it. this could be optimized later on

@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -40,4 +40,11 @@ public interface ComboBoxServerRpc extends ServerRpc {
      *            mode
      */
     public void setFilter(String filter);
+
+    /**
+     * Reset the force update flag once the list contents have been updated.
+     *
+     * @since 8.9
+     */
+    public void resetForceDataSourceUpdate();
 }

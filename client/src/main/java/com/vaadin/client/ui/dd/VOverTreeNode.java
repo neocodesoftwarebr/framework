@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,7 +16,7 @@
 package com.vaadin.client.ui.dd;
 
 import com.vaadin.client.UIDL;
-import com.vaadin.event.dnd.DropTargetExtension;
+import com.vaadin.ui.dnd.DropTargetExtension;
 
 /**
  *
@@ -25,7 +25,7 @@ import com.vaadin.event.dnd.DropTargetExtension;
  *             and extending classes
  */
 @Deprecated
-final public class VOverTreeNode extends VAcceptCriterion {
+public final class VOverTreeNode extends VAcceptCriterion {
 
     @Override
     protected boolean accept(VDragEvent drag, UIDL configuration) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -24,7 +24,7 @@ import org.openqa.selenium.WebElement;
 import com.vaadin.testbench.By;
 
 /**
- * TestBench Element API for TreeGrid
+ * TestBench Element API for TreeGrid.
  *
  * @author Vaadin Ltd
  */
@@ -116,6 +116,24 @@ public class TreeGridElement extends GridElement {
      */
     public boolean isRowCollapsed(int rowIndex, int hierarchyColumnIndex) {
         return !isRowExpanded(rowIndex, hierarchyColumnIndex);
+    }
+
+    /**
+     * Check whether the given indices correspond to a cell that contains a
+     * visible hierarchy toggle element.
+     *
+     * @param rowIndex
+     *            0-based row index
+     * @param hierarchyColumnIndex
+     *            0-based index of the hierarchy column
+     * @return {@code true} if this cell has the expand toggle visible
+     */
+    public boolean hasExpandToggle(int rowIndex, int hierarchyColumnIndex) {
+        WebElement expandElement = getExpandElement(rowIndex,
+                hierarchyColumnIndex);
+        List<String> classes = Arrays
+                .asList(expandElement.getAttribute("class").split(" "));
+        return classes.contains("expanded") || classes.contains("collapsed");
     }
 
     /**

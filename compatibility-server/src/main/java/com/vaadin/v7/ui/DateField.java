@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -621,8 +621,8 @@ public class DateField extends AbstractField<Date> implements
                 }
             } else if (newDate != oldDate
                     && (newDate == null || !newDate.equals(oldDate))) {
-                setValue(newDate, true); // Don't require a repaint, client
-                // updates itself
+                // Don't require a repaint, client updates itself
+                setValue(newDate, true);
             } else if (!uiHasValidDateString) { // oldDate ==
                                                 // newDate == null
                 // Empty value set, previously contained unparsable date string,

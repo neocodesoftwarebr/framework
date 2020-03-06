@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,22 +15,23 @@
  */
 package com.vaadin.event;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 
 import com.vaadin.ui.Component;
 import com.vaadin.util.ReflectTools;
 
 /**
- * An event that is fired when an item is collapsed. Note that expanded subtrees
- * of the collapsed item will not trigger collapse events.
+ * An event that is fired when an item is collapsed in a listing component that
+ * displays hierarchical data. Note that expanded subtrees of the collapsed item
+ * will not trigger collapse events.
  *
  * @author Vaadin Ltd
  * @since 8.1
  * @param <T>
  *            collapsed item type
  */
-public class CollapseEvent<T> extends Component.Event {
+public class CollapseEvent<T> extends Component.Event
+        implements HasUserOriginated {
 
     private final T collapsedItem;
 
@@ -40,7 +41,7 @@ public class CollapseEvent<T> extends Component.Event {
      * Construct a collapse event.
      *
      * @param source
-     *            the hierarchical this event originated from
+     *            the hierarchical component this event originated from
      * @param collapsedItem
      *            the item that was collapsed
      * @param userOriginated
@@ -63,13 +64,7 @@ public class CollapseEvent<T> extends Component.Event {
         return collapsedItem;
     }
 
-    /**
-     * Returns whether this event was triggered by user interaction, on the
-     * client side, or programmatically, on the server side.
-     *
-     * @return {@code true} if this event originates from the client,
-     *         {@code false} otherwise.
-     */
+    @Override
     public boolean isUserOriginated() {
         return userOriginated;
     }
@@ -82,7 +77,7 @@ public class CollapseEvent<T> extends Component.Event {
      * @since 8.1
      */
     @FunctionalInterface
-    public interface CollapseListener<T> extends Serializable {
+    public interface CollapseListener<T> extends SerializableEventListener {
 
         public static final Method COLLAPSE_METHOD = ReflectTools.findMethod(
                 CollapseListener.class, "itemCollapse", CollapseEvent.class);

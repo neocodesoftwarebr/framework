@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,7 +16,6 @@
 package com.vaadin.client.ui;
 
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.dom.client.Style.Overflow;
@@ -59,6 +58,8 @@ public class VSlider extends SimpleFocusablePanel
     protected double max;
     protected int resolution;
     protected Double value;
+
+    private boolean updateValueOnClick;
     protected SliderOrientation orientation = SliderOrientation.HORIZONTAL;
 
     private final HTML feedback = new HTML("", false);
@@ -76,7 +77,7 @@ public class VSlider extends SimpleFocusablePanel
 
     /* DOM element for slider's base */
     private final Element base;
-    private final int BASE_BORDER_WIDTH = 1;
+    private static final int BASE_BORDER_WIDTH = 1;
 
     /* DOM element for slider's handle */
     private final Element handle;
@@ -90,15 +91,10 @@ public class VSlider extends SimpleFocusablePanel
     /* Temporary dragging/animation variables */
     private boolean dragging = false;
 
-    private VLazyExecutor delayedValueUpdater = new VLazyExecutor(100,
-            new ScheduledCommand() {
-
-                @Override
-                public void execute() {
-                    fireValueChanged();
-                    acceleration = 1;
-                }
-            });
+    private VLazyExecutor delayedValueUpdater = new VLazyExecutor(100, () -> {
+        fireValueChanged();
+        acceleration = 1;
+    });
 
     public VSlider() {
         super();
@@ -237,12 +233,9 @@ public class VSlider extends SimpleFocusablePanel
 
         if (!isVertical()) {
             // Draw handle with a delay to allow base to gain maximum width
-            Scheduler.get().scheduleDeferred(new Command() {
-                @Override
-                public void execute() {
-                    buildHandle();
-                    setValue(value, false);
-                }
+            Scheduler.get().scheduleDeferred(() -> {
+                buildHandle();
+                setValue(value, false);
             });
         } else {
             buildHandle();
@@ -275,16 +268,16 @@ public class VSlider extends SimpleFocusablePanel
             processMouseWheelEvent(event);
         } else if (dragging || targ == handle) {
             processHandleEvent(event);
+        } else if (targ.equals(base)
+                && DOM.eventGetType(event) == Event.ONMOUSEUP
+                && updateValueOnClick) {
+            processBaseEvent(event);
+            feedbackPopup.show();
         } else if (targ == smaller) {
             decreaseValue(true);
         } else if (targ == bigger) {
             increaseValue(true);
-        } else if (DOM.eventGetType(event) == Event.MOUSEEVENTS) {
-            processBaseEvent(event);
-        } else if (BrowserInfo.get().isGecko()
-                && DOM.eventGetType(event) == Event.ONKEYPRESS
-                || !BrowserInfo.get().isGecko()
-                        && DOM.eventGetType(event) == Event.ONKEYDOWN) {
+        } else if (isNavigationEvent(event)) {
 
             if (handleNavigation(event.getKeyCode(), event.getCtrlKey(),
                     event.getShiftKey())) {
@@ -308,6 +301,15 @@ public class VSlider extends SimpleFocusablePanel
         if (WidgetUtil.isTouchEvent(event)) {
             event.preventDefault(); // avoid simulated events
             event.stopPropagation();
+        }
+    }
+
+    private boolean isNavigationEvent(Event event) {
+        if (BrowserInfo.get().isGecko()
+                && BrowserInfo.get().getGeckoVersion() < 65) {
+            return DOM.eventGetType(event) == Event.ONKEYPRESS;
+        } else {
+            return DOM.eventGetType(event) == Event.ONKEYDOWN;
         }
     }
 
@@ -367,11 +369,9 @@ public class VSlider extends SimpleFocusablePanel
     }
 
     private void processBaseEvent(Event event) {
-        if (DOM.eventGetType(event) == Event.ONMOUSEDOWN) {
-            if (!disabled && !readonly && !dragging) {
-                setValueByEvent(event, true);
-                DOM.eventCancelBubble(event, true);
-            }
+        if (!disabled && !readonly && !dragging) {
+            setValueByEvent(event, true);
+            DOM.eventCancelBubble(event, true);
         }
     }
 
@@ -460,11 +460,15 @@ public class VSlider extends SimpleFocusablePanel
     }
 
     /**
-     * Handles the keyboard events handled by the Slider
+     * Handles the keyboard events handled by the Slider.
      *
-     * @param event
-     *            The keyboard event received
-     * @return true iff the navigation event was handled
+     * @param keycode
+     *            The key code received
+     * @param ctrl
+     *            Whether {@code CTRL} was pressed
+     * @param shift
+     *            Whether {@code SHIFT} was pressed
+     * @return true if the navigation event was handled
      */
     public boolean handleNavigation(int keycode, boolean ctrl, boolean shift) {
 
@@ -670,5 +674,14 @@ public class VSlider extends SimpleFocusablePanel
             return "popup";
         }
         return null;
+    }
+
+    /**
+     * Specifies whether or not click event should update the Slider's value.
+     *
+     * @param updateValueOnClick
+     */
+    public void setUpdateValueOnClick(boolean updateValueOnClick) {
+        this.updateValueOnClick = updateValueOnClick;
     }
 }

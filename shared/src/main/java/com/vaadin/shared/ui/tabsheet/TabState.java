@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -19,6 +19,8 @@ import java.io.Serializable;
 
 import com.vaadin.shared.ui.ContentMode;
 
+import com.vaadin.shared.ui.ErrorLevel;
+
 /**
  * Shared state of a single tab in a Tabsheet or an Accordion.
  *
@@ -36,6 +38,13 @@ public class TabState implements Serializable {
     public String styleName;
     public String key;
     public String componentError;
+
+    /**
+     * Represents the level of error on a tab.
+     *
+     * @since 8.2
+     */
+    public ErrorLevel componentErrorLevel;
     public String id;
     public String iconAltText;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,19 +25,20 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Style.Overflow;
 import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
-import com.google.gwt.event.dom.client.HasDoubleClickHandlers;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.event.dom.client.KeyDownHandler;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseDownHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
+import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTML;
@@ -81,6 +82,7 @@ public class VTwinColSelect extends Composite implements MultiSelectWidget,
     private static final int VISIBLE_COUNT = 10;
 
     private static final int DEFAULT_COLUMN_COUNT = 10;
+    private static int scheduledScrollToItem = -1;
 
     private final DoubleClickListBox optionsListBox;
 
@@ -112,8 +114,7 @@ public class VTwinColSelect extends Composite implements MultiSelectWidget,
     /**
      * A multiselect ListBox which catches double clicks.
      */
-    public class DoubleClickListBox extends ListBox
-            implements HasDoubleClickHandlers {
+    public class DoubleClickListBox extends ListBox {
         /**
          * Constructs a new DoubleClickListBox.
          */
@@ -329,20 +330,46 @@ public class VTwinColSelect extends Composite implements MultiSelectWidget,
 
     private static void updateListBox(ListBox listBox,
             List<JsonObject> options) {
+        List<String> selected = new ArrayList<String>();
+        // Retain right visible selection, see #11287
+        for (int i = 0; i < listBox.getItemCount(); ++i) {
+            if (listBox.isItemSelected(i)) {
+                selected.add(listBox.getItemText(i));
+            }
+        }
         for (int i = 0; i < options.size(); i++) {
             final JsonObject item = options.get(i);
             // reuse existing option if possible
+            String caption = MultiSelectWidget.getCaption(item);
             if (i < listBox.getItemCount()) {
-                listBox.setItemText(i, MultiSelectWidget.getCaption(item));
+                listBox.setItemText(i, caption);
                 listBox.setValue(i, MultiSelectWidget.getKey(item));
             } else {
-                listBox.addItem(MultiSelectWidget.getCaption(item),
-                        MultiSelectWidget.getKey(item));
+                listBox.addItem(caption, MultiSelectWidget.getKey(item));
+            }
+            boolean isSelected = selected.contains(caption);
+            listBox.setItemSelected(i, isSelected);
+            if (isSelected) {
+                // Ensure that last selected item is visible
+                scrollToView(listBox,i);
             }
         }
         // remove extra
         for (int i = listBox.getItemCount() - 1; i >= options.size(); i--) {
             listBox.removeItem(i);
+        }
+    }
+
+    private static void scrollToView(ListBox listBox, int i) {
+        if (scheduledScrollToItem == -1) {
+            scheduledScrollToItem = i;
+            Scheduler.get().scheduleDeferred(() -> {
+                 Element el = (Element) listBox.getElement().getChild(scheduledScrollToItem);
+                 el.scrollIntoView();
+                 scheduledScrollToItem = -1;
+            });
+        } else {
+            scheduledScrollToItem = i;
         }
     }
 
@@ -361,15 +388,15 @@ public class VTwinColSelect extends Composite implements MultiSelectWidget,
     private void moveSelectedItemsLeftToRight() {
         Set<String> movedItems = moveSelectedItems(optionsListBox,
                 selectionsListBox);
-        selectionChangeListeners
-                .forEach(e -> e.accept(movedItems, Collections.emptySet()));
+        selectionChangeListeners.forEach(listener -> listener.accept(movedItems,
+                Collections.emptySet()));
     }
 
     private void moveSelectedItemsRightToLeft() {
         Set<String> movedItems = moveSelectedItems(selectionsListBox,
                 optionsListBox);
-        selectionChangeListeners
-                .forEach(e -> e.accept(Collections.emptySet(), movedItems));
+        selectionChangeListeners.forEach(listener -> listener
+                .accept(Collections.emptySet(), movedItems));
     }
 
     private static Set<String> moveSelectedItems(ListBox source,
@@ -564,6 +591,14 @@ public class VTwinColSelect extends Composite implements MultiSelectWidget,
     @Override
     public void onKeyDown(KeyDownEvent event) {
         int keycode = event.getNativeKeyCode();
+
+        // Catch Ctrl-A and select all items since other browsers
+        // than Chrome do not handle this natively
+        if (event.isControlKeyDown() && (keycode == KeyCodes.KEY_A)) {
+            for (int i = 0; i < optionsListBox.getItemCount(); i++) {
+                optionsListBox.setItemSelected(i, true);
+            }
+        }
 
         // Catch tab and move between select:s
         if (keycode == KeyCodes.KEY_TAB

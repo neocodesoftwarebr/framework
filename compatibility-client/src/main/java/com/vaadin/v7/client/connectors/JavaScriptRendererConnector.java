@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,6 +17,7 @@ package com.vaadin.v7.client.connectors;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Logger;
 
 import com.google.gwt.core.client.JavaScriptObject;
@@ -230,8 +231,7 @@ public class JavaScriptRendererConnector
                     JsArrayString events = getConsumedEvents(
                             helper.getConnectorWrapper());
 
-                    ArrayList<String> list = new ArrayList<String>(
-                            events.length());
+                    List<String> list = new ArrayList<String>(events.length());
                     for (int i = 0; i < events.length(); i++) {
                         list.add(events.get(i));
                     }
@@ -246,7 +246,7 @@ public class JavaScriptRendererConnector
             /*-{
                 var rawEvents = wrapper.getConsumedEvents();
                 var events = [];
-                for(var i = 0; i < rawEvents.length; i++) {
+                for (var i = 0; i < rawEvents.length; i++) {
                   events[i] = ""+rawEvents[i];
                 }
                 return events;

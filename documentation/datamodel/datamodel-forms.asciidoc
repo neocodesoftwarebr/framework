@@ -14,6 +14,8 @@ Vaadin Framework provides a [classname]#Binder# class that the developer can use
 [classname]#Binder# takes care of reading values from the business object and converting the user's data between the format expected by the business object and the format expected by the field.
 The input entered by the user can also be validated, and the current validation status can be presented to the user in different ways.
 
+TIP: Watch the https://vaadin.com/training/course/view/data-binding-and-validation[Vaadin 8: Data binding and validation] free training video to learn more about creating simple and complex forms, value conversion and validation, and how the Vaadin data model works. 
+
 The first step to binding fields for a form is to create a [classname]#Binder# and bind some input fields. There is only one [classname]#Binder# instance for each form and it is used for all fields in that form.
 
 [source, java]
@@ -91,11 +93,23 @@ binder.bind(nameField,
     }
   });
 ----
+== Binding non-modifiable Data
+
+Non-modifiable data can be also bound to any component or component property with [classname]#ReadOnlyHasValue# helper class.
+For example, `Panel` caption can display a person full name:
+
+[source, java]
+----
+Panel infoPanel = new Panel();
+ReadOnlyHasValue<Person> panelTitle = new ReadOnlyHasValue<>(
+        person -> infoPanel.setCaption(person.getLastName() + ", " + person.getFirstName()));
+binder.forField(panelTitle).bind(person -> person, null);
+----
 
 == Validating and Converting User Input
 
 `Binder` supports checking the validity of the user's input and converting the values between the type used in business objects and the bound UI components.
-These to concepts go hand in hand since validation can be based on a converted value, and being able to convert a value is a kind of validation.
+These two concepts go hand in hand since validation can be based on a converted value, and being able to convert a value is a kind of validation.
 
 [[datamodel.forms.validation]]
 === Validation
@@ -124,6 +138,7 @@ binder.forField(nameField)
 
 binder.forField(titleField)
   // Shorthand for requiring the field to be non-empty
+  // This is conditional on Binding::setAsRequiredEnabled(boolean)
   .asRequired("Every employee must have a title")
   .bind(Person::getTitle, Person::setTitle);
 ----
@@ -368,6 +383,11 @@ if (saved) {
 ----
 --
 
+[NOTE]
+Note, if you need to write the values passing the validation regardless of having one or more failing validators, you can
+use binder.writeBeanAsDraft(person).
+
+
 Binder keeps track of which bindings have been updated by the user and which bindings are in an invalid state.
 It also fires an event when this status changes.
 We can use that event to make the save and reset buttons of our forms become enabled or disabled depending on the current status of the form.
@@ -506,27 +526,26 @@ We can also define our own status handler to provide a custom way of handling st
 // in order to display generated error messages separated by a <br> tag
 formStatusLabel.setContentMode(ContentMode.HTML);
 
-BinderValidationStatusHandler defaultHandler = binder.getValidationStatusHandler();
+BinderValidationStatusHandler<Person> defaultHandler = binder.getValidationStatusHandler();
 
 binder.setValidationStatusHandler(status -> {
     // create an error message on failed bean level validations
-    List<Result<?>> errors = status.getBeanValidationErrors();
+    List<ValidationResult> errors = status.getBeanValidationErrors();
 
     // collect all bean level error messages into a single string,
     // separating each message with a <br> tag
-    String errorMessage = errors.stream().map(Result::getMessage)
-        .map(o -> o.get())
-        // sanitize the individual error strings to avoid code injection
-        // since we are displaying the resulting string as HTML
-        .map(errorString -> Jsoup.clean(errorString, Whitelist.simpleText()))
-        .collect(Collectors.joining("<br>"));
+    String errorMessage = errors.stream().map(ValidationResult::getErrorMessage)
+            // sanitize the individual error strings to avoid code injection
+            // since we are displaying the resulting string as HTML
+            .map(errorString -> Jsoup.clean(errorString, Whitelist.simpleText()))
+            .collect(Collectors.joining("<br>"));
 
     // finally, display all bean level validation errors in a single label
     formStatusLabel.setValue(errorMessage);
     formStatusLabel.setVisible(!errorMessage.isEmpty());
 
     // Let the default handler show messages for each field
-    defaultHandler.accept(status);
+    defaultHandler.statusChange(status);
 });
 ----
 
@@ -598,4 +617,11 @@ binder.forField(yearOfBirth)
   .bind(Person::getYearOfBirth, Person::setYearOfBirth));
 
 binder.bindInstanceFields(this);
+----
+
+[NOTE]
+If you need to bind nested proprerties with bindInstanceFields method, you need to instantiate the Binder using: 
+[source,java]
+----
+Binder<Person> binder = new Binder<>(Person.class,true);
 ----

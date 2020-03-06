@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,14 +15,11 @@
  */
 package com.vaadin.v7.data.util.converter;
 
-import com.vaadin.data.Binder;
-
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Locale;
 
 /**
@@ -41,7 +38,8 @@ import java.util.Locale;
  * @author Vaadin Ltd
  *
  * @deprecated As of 8.0, a lightweight lambda-based converter can be build with
- *  {@link Binder}{@code .forField(...).withConverter(...)} methods.
+ *             {@link com.vaadin.data.Binder
+ *             Binder}{@code .forField(...).withConverter(...)} methods.
  */
 @Deprecated
 public class StringToCollectionConverter
@@ -97,7 +95,7 @@ public class StringToCollectionConverter
      *
      * @param tokenConverter
      *            converter for token
-     * @param tokenType
+     * @param tokenClass
      *            expected token model type
      * @param delimiter
      *            delimiter in presentation string
@@ -117,7 +115,7 @@ public class StringToCollectionConverter
      *
      * @param tokenConverter
      *            converter for token
-     * @param tokenType
+     * @param tokenClass
      *            expected token model type
      * @param delimiter
      *            delimiter in presentation string
@@ -178,16 +176,16 @@ public class StringToCollectionConverter
         }
         StringBuilder builder = new StringBuilder();
         Converter converter = tokenConverter;
-        for (Iterator<?> iterator = value.iterator(); iterator.hasNext();) {
+        for (Object o : value) {
             if (converter == null) {
-                builder.append(iterator.next());
+                builder.append(o);
             } else {
-                builder.append(converter.convertToPresentation(iterator.next(),
-                        targetType, locale));
+                builder.append(
+                        converter.convertToPresentation(o, targetType, locale));
             }
             builder.append(delimiter);
         }
-        if (builder.length() > 0) {
+        if (builder.length() != 0) {
             return builder.substring(0, builder.length() - delimiter.length());
         } else {
             return builder.toString();

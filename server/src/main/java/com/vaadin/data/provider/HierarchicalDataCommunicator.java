@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,31 +15,18 @@
  */
 package com.vaadin.data.provider;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.vaadin.data.HierarchyData;
-import com.vaadin.data.provider.HierarchyMapper.TreeLevelQuery;
-import com.vaadin.data.provider.HierarchyMapper.TreeNode;
+import com.vaadin.data.TreeData;
 import com.vaadin.server.SerializableConsumer;
-import com.vaadin.server.SerializablePredicate;
 import com.vaadin.shared.Range;
 import com.vaadin.shared.extension.datacommunicator.HierarchicalDataCommunicatorState;
-import com.vaadin.shared.ui.treegrid.TreeGridCommunicationConstants;
-
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
+import com.vaadin.ui.ItemCollapseAllowedProvider;
 
 /**
  * Data communicator that handles requesting hierarchical data from
@@ -52,36 +39,20 @@ import elemental.json.JsonObject;
  */
 public class HierarchicalDataCommunicator<T> extends DataCommunicator<T> {
 
-    private static final Logger LOGGER = Logger
-            .getLogger(HierarchicalDataCommunicator.class.getName());
-
-    /**
-     * The amount of root level nodes to fetch and push to the client.
-     */
-    private static final int INITIAL_FETCH_SIZE = 100;
-
-    private HierarchyMapper mapper = new HierarchyMapper();
-
-    private Set<String> rowKeysPendingExpand = new HashSet<>();
+    private HierarchyMapper<T, ?> mapper;
 
     /**
      * Collapse allowed provider used to allow/disallow collapsing nodes.
      */
-    private SerializablePredicate<T> itemCollapseAllowedProvider = t -> true;
-
-    /**
-     * The captured client side cache size.
-     */
-    private int latestCacheSize = INITIAL_FETCH_SIZE;
+    private ItemCollapseAllowedProvider<T> itemCollapseAllowedProvider = t -> true;
 
     /**
      * Construct a new hierarchical data communicator backed by a
-     * {@link InMemoryHierarchicalDataProvider}.
+     * {@link TreeDataProvider}.
      */
     public HierarchicalDataCommunicator() {
         super();
-        dataProvider = new InMemoryHierarchicalDataProvider<>(
-                new HierarchyData<>());
+        setDataProvider(new TreeDataProvider<>(new TreeData<>()), null);
     }
 
     @Override
@@ -95,210 +66,11 @@ public class HierarchicalDataCommunicator<T> extends DataCommunicator<T> {
     }
 
     @Override
-    protected void sendDataToClient(boolean initial) {
-        // on purpose do not call super
-        if (getDataProvider() == null) {
-            return;
-        }
-
-        if (initial || reset) {
-            loadInitialData();
-        } else {
-            loadRequestedRows();
-        }
-
-        if (!getUpdatedData().isEmpty()) {
-            JsonArray dataArray = Json.createArray();
-            int i = 0;
-            for (T data : getUpdatedData()) {
-                dataArray.set(i++, createDataObject(data, -1));
-            }
-            getClientRpc().updateData(dataArray);
-            getUpdatedData().clear();
-        }
-    }
-
-    private void loadInitialData() {
-        int rootSize = doSizeQuery(null);
-        mapper.reset(rootSize);
-
-        if (rootSize != 0) {
-            Range initialRange = getInitialRowsToPush(rootSize);
-            assert !initialRange
-                    .isEmpty() : "Initial range should never be empty.";
-            Stream<T> rootItems = doFetchQuery(initialRange.getStart(),
-                    initialRange.length(), null);
-
-            // for now just fetching data for the root level as everything is
-            // collapsed by default
-            List<T> items = rootItems.collect(Collectors.toList());
-            List<JsonObject> dataObjects = items.stream()
-                    .map(item -> createDataObject(item, 0))
-                    .collect(Collectors.toList());
-
-            getClientRpc().reset(rootSize);
-            sendData(0, dataObjects);
-            getActiveDataHandler().addActiveData(items.stream());
-            getActiveDataHandler().cleanUp(items.stream());
-        } else {
-            getClientRpc().reset(0);
-        }
-
-        setPushRows(Range.withLength(0, 0));
-        // any updated data is ignored at this point
-        getUpdatedData().clear();
-        reset = false;
-    }
-
-    private void loadRequestedRows() {
-        final Range requestedRows = getPushRows();
-        if (!requestedRows.isEmpty()) {
-            doPushRows(requestedRows);
-        }
-
-        setPushRows(Range.withLength(0, 0));
-    }
-
-    private void doPushRows(final Range requestedRows) {
-        Stream<TreeLevelQuery> levelQueries = mapper.splitRangeToLevelQueries(
-                requestedRows.getStart(), requestedRows.getEnd() - 1);
-
-        JsonObject[] dataObjects = new JsonObject[requestedRows.length()];
-        BiConsumer<JsonObject, Integer> rowDataMapper = (object,
-                index) -> dataObjects[index
-                        - requestedRows.getStart()] = object;
-        List<T> fetchedItems = new ArrayList<>(dataObjects.length);
-
-        levelQueries.forEach(query -> {
-            List<T> results = doFetchQuery(query.startIndex, query.size,
-                    getKeyMapper().get(query.node.getParentKey()))
-                            .collect(Collectors.toList());
-            // TODO if the size differers from expected, all goes to hell
-            fetchedItems.addAll(results);
-            List<JsonObject> rowData = results.stream()
-                    .map(item -> createDataObject(item, query.depth))
-                    .collect(Collectors.toList());
-            mapper.reorderLevelQueryResultsToFlatOrdering(rowDataMapper, query,
-                    rowData);
-        });
-        verifyNoNullItems(dataObjects, requestedRows);
-
-        sendData(requestedRows.getStart(), Arrays.asList(dataObjects));
-        getActiveDataHandler().addActiveData(fetchedItems.stream());
-        getActiveDataHandler().cleanUp(fetchedItems.stream());
-    }
-
-    /*
-     * Verify that there are no null objects in the array, to fail eagerly and
-     * not just on the client side.
-     */
-    private void verifyNoNullItems(JsonObject[] dataObjects,
-            Range requestedRange) {
-        List<Integer> nullItems = new ArrayList<>(0);
-        AtomicInteger indexCounter = new AtomicInteger();
-        Stream.of(dataObjects).forEach(object -> {
-            int index = indexCounter.getAndIncrement();
-            if (object == null) {
-                nullItems.add(index);
-            }
-        });
-        if (!nullItems.isEmpty()) {
-            throw new IllegalStateException("For requested rows "
-                    + requestedRange + ", there was null items for indexes "
-                    + nullItems.stream().map(Object::toString)
-                            .collect(Collectors.joining(", ")));
-        }
-    }
-
-    private JsonObject createDataObject(T item, int depth) {
-        JsonObject dataObject = getDataObject(item);
-
-        JsonObject hierarchyData = Json.createObject();
-        if (depth != -1) {
-            hierarchyData.put(TreeGridCommunicationConstants.ROW_DEPTH, depth);
-        }
-
-        boolean isLeaf = !getDataProvider().hasChildren(item);
-        if (isLeaf) {
-            hierarchyData.put(TreeGridCommunicationConstants.ROW_LEAF, true);
-        } else {
-            String key = getKeyMapper().key(item);
-            hierarchyData.put(TreeGridCommunicationConstants.ROW_COLLAPSED,
-                    mapper.isCollapsed(key));
-            hierarchyData.put(TreeGridCommunicationConstants.ROW_LEAF, false);
-            hierarchyData.put(
-                    TreeGridCommunicationConstants.ROW_COLLAPSE_ALLOWED,
-                    itemCollapseAllowedProvider.test(item));
-        }
-
-        // add hierarchy information to row as metadata
-        dataObject.put(TreeGridCommunicationConstants.ROW_HIERARCHY_DESCRIPTION,
-                hierarchyData);
-
-        return dataObject;
-    }
-
-    private void sendData(int startIndex, List<JsonObject> dataObjects) {
-        JsonArray dataArray = Json.createArray();
-        int i = 0;
-        for (JsonObject dataObject : dataObjects) {
-            dataArray.set(i++, dataObject);
-        }
-
-        getClientRpc().setData(startIndex, dataArray);
-    }
-
-    /**
-     * Returns the range of rows to push on initial response.
-     *
-     * @param rootLevelSize
-     *            the amount of rows on the root level
-     * @return the range of rows to push initially
-     */
-    private Range getInitialRowsToPush(int rootLevelSize) {
-        // TODO optimize initial level to avoid unnecessary requests
-        return Range.between(0, Math.min(rootLevelSize, latestCacheSize));
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private Stream<T> doFetchQuery(int start, int length, T parentItem) {
-        return getDataProvider()
-                .fetch(new HierarchicalQuery(start, length, getBackEndSorting(),
-                        getInMemorySorting(), getFilter(), parentItem));
-    }
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private int doSizeQuery(T parentItem) {
-        return getDataProvider()
-                .getChildCount(new HierarchicalQuery(getFilter(), parentItem));
-    }
-
-    @Override
-    protected void onRequestRows(int firstRowIndex, int numberOfRows,
-            int firstCachedRowIndex, int cacheSize) {
-        super.onRequestRows(firstRowIndex, numberOfRows, firstCachedRowIndex,
-                cacheSize);
-    }
-
-    @Override
-    protected void onDropRows(JsonArray keys) {
-        for (int i = 0; i < keys.length(); i++) {
-            // cannot drop keys of expanded rows, parents of expanded rows or
-            // rows that are pending expand
-            String itemKey = keys.getString(i);
-            if (!mapper.isKeyStored(itemKey)
-                    && !rowKeysPendingExpand.contains(itemKey)) {
-                // FIXME: cache invalidated incorrectly, active keys being
-                // dropped prematurely
-                // getActiveDataHandler().dropActiveData(itemKey);
-            }
-        }
-    }
-
-    @Override
-    protected void dropAllData() {
-        super.dropAllData();
-        rowKeysPendingExpand.clear();
+    public List<T> fetchItemsWithRange(int offset, int limit) {
+        // Instead of adding logic to this class, delegate request to the
+        // separate object handling hierarchies.
+        return mapper.fetchItems(Range.withLength(offset, limit))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -322,7 +94,40 @@ public class HierarchicalDataCommunicator<T> extends DataCommunicator<T> {
      */
     public <F> SerializableConsumer<F> setDataProvider(
             HierarchicalDataProvider<T, F> dataProvider, F initialFilter) {
-        return super.setDataProvider(dataProvider, initialFilter);
+        SerializableConsumer<F> consumer = super.setDataProvider(dataProvider,
+                initialFilter);
+
+        // Remove old mapper
+        if (mapper != null) {
+            removeDataGenerator(mapper);
+        }
+        mapper = createHierarchyMapper(dataProvider);
+
+        // Set up mapper for requests
+        mapper.setBackEndSorting(getBackEndSorting());
+        mapper.setInMemorySorting(getInMemorySorting());
+        mapper.setFilter(getFilter());
+        mapper.setItemCollapseAllowedProvider(getItemCollapseAllowedProvider());
+
+        // Provide hierarchy data to json
+        addDataGenerator(mapper);
+
+        return consumer;
+    }
+
+    /**
+     * Create new {@code HierarchyMapper} for the given data provider. May be
+     * overridden in subclasses.
+     *
+     * @param dataProvider
+     *            the data provider
+     * @param <F>
+     *            Query type
+     * @return new {@link HierarchyMapper}
+     */
+    protected <F> HierarchyMapper<T, F> createHierarchyMapper(
+            HierarchicalDataProvider<T, F> dataProvider) {
+        return new HierarchyMapper<>(dataProvider);
     }
 
     /**
@@ -344,7 +149,9 @@ public class HierarchicalDataCommunicator<T> extends DataCommunicator<T> {
     public <F> SerializableConsumer<F> setDataProvider(
             DataProvider<T, F> dataProvider, F initialFilter) {
         if (dataProvider instanceof HierarchicalDataProvider) {
-            return super.setDataProvider(dataProvider, initialFilter);
+            return setDataProvider(
+                    (HierarchicalDataProvider<T, F>) dataProvider,
+                    initialFilter);
         }
         throw new IllegalArgumentException(
                 "Only " + HierarchicalDataProvider.class.getName()
@@ -352,153 +159,204 @@ public class HierarchicalDataCommunicator<T> extends DataCommunicator<T> {
     }
 
     /**
-     * Collapses given row, removing all its subtrees. Calling this method will
-     * have no effect if the row is already collapsed.
-     *
-     * @param collapsedRowKey
-     *            the key of the row, not {@code null}
-     * @param collapsedRowIndex
-     *            the index of row to collapse
-     * @return {@code true} if the row was collapsed, {@code false} otherwise
-     */
-    public boolean doCollapse(String collapsedRowKey, int collapsedRowIndex) {
-        if (collapsedRowIndex < 0 | collapsedRowIndex >= mapper.getTreeSize()) {
-            throw new IllegalArgumentException("Invalid row index "
-                    + collapsedRowIndex + " when tree grid size of "
-                    + mapper.getTreeSize());
-        }
-        Objects.requireNonNull(collapsedRowKey, "Row key cannot be null");
-        T collapsedItem = getKeyMapper().get(collapsedRowKey);
-        Objects.requireNonNull(collapsedItem,
-                "Cannot find item for given key " + collapsedItem);
-
-        if (mapper.isCollapsed(collapsedRowKey)) {
-            return false;
-        }
-        int collapsedSubTreeSize = mapper.collapse(collapsedRowKey,
-                collapsedRowIndex);
-        getClientRpc().removeRows(collapsedRowIndex + 1,
-                collapsedSubTreeSize);
-        // FIXME seems like a slight overkill to do this just for refreshing
-        // expanded status
-        refresh(collapsedItem);
-        return true;
-    }
-
-    /**
-     * Expands the given row. Calling this method will have no effect if the row
-     * is already expanded.
-     *
-     * @param expandedRowKey
-     *            the key of the row, not {@code null}
-     * @param expandedRowIndex
-     *            the index of the row to expand
-     * @param userOriginated
-     *            whether this expand was originated from the server or client
-     * @return {@code true} if the row was expanded, {@code false} otherwise
-     */
-    public boolean doExpand(String expandedRowKey, final int expandedRowIndex,
-            boolean userOriginated) {
-        if (!userOriginated && !rowKeysPendingExpand.contains(expandedRowKey)) {
-            return false;
-        }
-        if (expandedRowIndex < 0 | expandedRowIndex >= mapper.getTreeSize()) {
-            throw new IllegalArgumentException("Invalid row index "
-                    + expandedRowIndex + " when tree grid size of "
-                    + mapper.getTreeSize());
-        }
-        Objects.requireNonNull(expandedRowKey, "Row key cannot be null");
-        final T expandedItem = getKeyMapper().get(expandedRowKey);
-        Objects.requireNonNull(expandedItem,
-                "Cannot find item for given key " + expandedRowKey);
-
-        int expandedNodeSize = doSizeQuery(expandedItem);
-        if (expandedNodeSize == 0) {
-            // TODO handle 0 size -> not expandable
-            throw new IllegalStateException("Row with index " + expandedRowIndex
-                    + " returned no child nodes.");
-        }
-
-        if (!mapper.isCollapsed(expandedRowKey)) {
-            return false;
-        }
-        expandedNodeSize = mapper.expand(expandedRowKey, expandedRowIndex,
-                expandedNodeSize);
-        rowKeysPendingExpand.remove(expandedRowKey);
-
-        getClientRpc().insertRows(expandedRowIndex + 1, expandedNodeSize);
-        // TODO optimize by sending "just enough" of the expanded items
-        // directly
-        doPushRows(
-                Range.withLength(expandedRowIndex + 1, expandedNodeSize));
-
-        // expanded node needs to be updated to be marked as expanded
-        // FIXME seems like a slight overkill to do this just for refreshing
-        // expanded status
-        refresh(expandedItem);
-        return true;
-    }
-
-    /**
-     * Set an item as pending expansion.
-     * <p>
-     * Calling this method reserves a communication key for the item that is
-     * guaranteed to not be invalidated until the item is expanded. Has no
-     * effect and returns an empty optional if the given item is already
-     * expanded or has no children.
-     *
-     * @param item
-     *            the item to set as pending expansion
-     * @return an optional of the communication key used for the item, empty if
-     *         the item cannot be expanded
-     */
-    public Optional<String> setPendingExpand(T item) {
-        Objects.requireNonNull(item, "Item cannot be null");
-        if (getKeyMapper().has(item)
-                && !mapper.isCollapsed(getKeyMapper().key(item))) {
-            // item is already expanded
-            return Optional.empty();
-        }
-        if (!getDataProvider().hasChildren(item)) {
-            // ignore item with no children
-            return Optional.empty();
-        }
-        String key = getKeyMapper().key(item);
-        rowKeysPendingExpand.add(key);
-        return Optional.of(key);
-    }
-
-    /**
-     * Collapse an item.
-     * <p>
-     * This method will either collapse an item directly, or remove its pending
-     * expand status. If the item is not expanded or pending expansion, calling
-     * this method has no effect.
+     * Collapses the given item and removes its sub-hierarchy. Calling this
+     * method will have no effect if the row is already collapsed.
      *
      * @param item
      *            the item to collapse
-     * @return an optional of the communication key used for the item, empty if
-     *         the item cannot be collapsed
      */
-    public Optional<String> collapseItem(T item) {
-        Objects.requireNonNull(item, "Item cannot be null");
-        if (!getKeyMapper().has(item)) {
-            // keymapper should always have items that are expanded or pending
-            // expand
-            return Optional.empty();
+    public void collapse(T item) {
+        collapse(item, true);
+    }
+
+    /**
+     * Collapses the given item and removes its sub-hierarchy. Calling this
+     * method will have no effect if the row is already collapsed.
+     * {@code syncAndRefresh} indicates whether the changes should be
+     * synchronised to the client and the data provider be notified.
+     *
+     * @param item
+     *            the item to collapse
+     * @param syncAndRefresh
+     *            {@code true} if the changes should be synchronised to the
+     *            client and the data provider should be notified of the
+     *            changes, {@code false} otherwise.
+     */
+    public void collapse(T item, boolean syncAndRefresh) {
+        Integer index = syncAndRefresh ? mapper.getIndexOf(item).orElse(null)
+                : null;
+        doCollapse(item, index, syncAndRefresh);
+    }
+
+    /**
+     * Collapses the given item and removes its sub-hierarchy. Calling this
+     * method will have no effect if the row is already collapsed.
+     *
+     * @param item
+     *            the item to collapse
+     * @param index
+     *            the index of the item
+     */
+    public void collapse(T item, Integer index) {
+        doCollapse(item, index, true);
+    }
+
+    /**
+     * Collapses given item and removes its sub-hierarchy. Calling this method
+     * will have no effect if the row is already collapsed. The index is
+     * provided by the client-side or calculated from a full data request.
+     *
+     *
+     * @param item
+     *            the item to collapse
+     * @param index
+     *            the index of the item
+     * @deprecated Use {@link #collapse(Object, Integer)} instead.
+     */
+    @Deprecated
+    public void doCollapse(T item, Optional<Integer> index) {
+        doCollapse(item, index.orElse(null), true);
+    }
+
+    /**
+     * Collapses the given item and removes its sub-hierarchy. Calling this
+     * method will have no effect if the row is already collapsed. The index is
+     * provided by the client-side or calculated from a full data request.
+     * {@code syncAndRefresh} indicates whether the changes should be
+     * synchronised to the client and the data provider be notified.
+     *
+     * @param item
+     *            the item to collapse
+     * @param index
+     *            the index of the item
+     * @param syncAndRefresh
+     *            {@code true} if the changes should be synchronised to the
+     *            client and the data provider should be notified of the
+     *            changes, {@code false} otherwise.
+     */
+    private void doCollapse(T item, Integer index, boolean syncAndRefresh) {
+        Range removedRows = mapper.collapse(item, index);
+        if (syncAndRefresh) {
+            if (!reset && !removedRows.isEmpty()) {
+                getClientRpc().removeRows(removedRows.getStart(),
+                        removedRows.length());
+            }
+            refresh(item);
         }
-        String nodeKey = getKeyMapper().key(item);
-        Optional<TreeNode> node = mapper.getNodeForKey(nodeKey);
-        if (node.isPresent()) {
-            rowKeysPendingExpand.remove(nodeKey);
-            doCollapse(nodeKey, node.get().getStartIndex() - 1);
-            return Optional.of(nodeKey);
+    }
+
+    /**
+     * Expands the given item. Calling this method will have no effect if the
+     * item is already expanded or if it has no children.
+     *
+     * @param item
+     *            the item to expand
+     */
+    public void expand(T item) {
+        expand(item, true);
+    }
+
+    /**
+     * Expands the given item. Calling this method will have no effect if the
+     * item is already expanded or if it has no children. {@code syncAndRefresh}
+     * indicates whether the changes should be synchronised to the client and
+     * the data provider be notified.
+     *
+     * @param item
+     *            the item to expand
+     * @param syncAndRefresh
+     *            {@code true} if the changes should be synchronised to the
+     *            client and the data provider should be notified of the
+     *            changes, {@code
+     *         false} otherwise.
+     */
+    public void expand(T item, boolean syncAndRefresh) {
+        Integer index = syncAndRefresh ? mapper.getIndexOf(item).orElse(null)
+                : null;
+        doExpand(item, index, syncAndRefresh);
+    }
+
+    /**
+     * Expands the given item at the given index. Calling this method will have
+     * no effect if the item is already expanded.
+     *
+     * @param item
+     *            the item to expand
+     * @param index
+     *            the index of the item
+     */
+    public void expand(T item, Integer index) {
+        doExpand(item, index, true);
+    }
+
+    /**
+     * Expands the given item. Calling this method will have no effect if the
+     * item is already expanded or if it has no children. The index is provided
+     * by the client-side or calculated from a full data request.
+     * {@code syncAndRefresh} indicates whether the changes should be
+     * synchronised to the client and the data provider be notified.
+     *
+     * @param item
+     *            the item to expand
+     * @param index
+     *            the index of the item
+     * @param syncAndRefresh
+     *            {@code true} if the changes should be synchronised to the
+     *            client and the data provider should be notified of the
+     *            changes, {@code false} otherwise.
+     */
+    private void doExpand(T item, Integer index, boolean syncAndRefresh) {
+        Range addedRows = mapper.expand(item, index);
+        if (syncAndRefresh) {
+            if (!reset && !addedRows.isEmpty()) {
+                getClientRpc().insertRows(addedRows.getStart(),
+                        addedRows.length());
+                Stream<T> children = mapper.fetchItems(item,
+                        Range.withLength(0, addedRows.length()));
+                pushData(addedRows.getStart(),
+                        children.collect(Collectors.toList()));
+            }
+            refresh(item);
         }
-        if (rowKeysPendingExpand.contains(nodeKey)) {
-            rowKeysPendingExpand.remove(nodeKey);
-            return Optional.of(nodeKey);
-        }
-        return Optional.empty();
+    }
+
+    /**
+     * Expands the given item at given index. Calling this method will have no
+     * effect if the row is already expanded. The index is provided by the
+     * client-side or calculated from a full data request.
+     *
+     * @param item
+     *            the item to expand
+     * @param index
+     *            the index of the item
+     * @see #expand(Object)
+     * @deprecated use {@link #expand(Object, Integer)} instead
+     */
+    @Deprecated
+    public void doExpand(T item, Optional<Integer> index) {
+        expand(item, index.orElse(null));
+    }
+
+    /**
+     * Returns whether given item has children.
+     *
+     * @param item
+     *            the item to test
+     * @return {@code true} if item has children; {@code false} if not
+     */
+    public boolean hasChildren(T item) {
+        return mapper.hasChildren(item);
+    }
+
+    /**
+     * Returns whether given item is expanded.
+     *
+     * @param item
+     *            the item to test
+     * @return {@code true} if item is expanded; {@code false} if not
+     */
+    public boolean isExpanded(T item) {
+        return mapper.isExpanded(item);
     }
 
     /**
@@ -513,20 +371,82 @@ public class HierarchicalDataCommunicator<T> extends DataCommunicator<T> {
      *            the item collapse allowed provider, not {@code null}
      */
     public void setItemCollapseAllowedProvider(
-            SerializablePredicate<T> provider) {
+            ItemCollapseAllowedProvider<T> provider) {
         Objects.requireNonNull(provider, "Provider can't be null");
         itemCollapseAllowedProvider = provider;
+        // Update hierarchy mapper
+        mapper.setItemCollapseAllowedProvider(provider);
 
-        getActiveDataHandler().getActiveData().forEach(this::refresh);
+        getActiveDataHandler().getActiveData().values().forEach(this::refresh);
     }
 
     /**
-     * Returns parent index for the row or {@code null}
+     * Returns parent index for the row or {@code null}.
      *
-     * @param rowIndex the row index
+     * @param item
+     *            the item to find the parent of
      * @return the parent index or {@code null} for top-level items
      */
-    public Integer getParentIndex(int rowIndex) {
-        return mapper.getParentIndex(rowIndex);
+    public Integer getParentIndex(T item) {
+        return mapper.getParentIndex(item);
+    }
+
+    /**
+     * Gets the item collapse allowed provider.
+     *
+     * @return the item collapse allowed provider
+     */
+    public ItemCollapseAllowedProvider<T> getItemCollapseAllowedProvider() {
+        return itemCollapseAllowedProvider;
+    }
+
+    @Override
+    public int getDataProviderSize() {
+        return mapper.getTreeSize();
+    }
+
+    @Override
+    public void setBackEndSorting(List<QuerySortOrder> sortOrder,
+            boolean immediateReset) {
+        if (mapper != null) {
+            mapper.setBackEndSorting(sortOrder);
+        }
+        super.setBackEndSorting(sortOrder, immediateReset);
+    }
+
+    @Override
+    public void setBackEndSorting(List<QuerySortOrder> sortOrder) {
+        setBackEndSorting(sortOrder, true);
+    }
+
+    @Override
+    public void setInMemorySorting(Comparator<T> comparator,
+            boolean immediateReset) {
+        if (mapper != null) {
+            mapper.setInMemorySorting(comparator);
+        }
+        super.setInMemorySorting(comparator, immediateReset);
+    }
+
+    @Override
+    public void setInMemorySorting(Comparator<T> comparator) {
+        setInMemorySorting(comparator, true);
+    }
+
+    @Override
+    protected <F> void setFilter(F filter) {
+        if (mapper != null) {
+            mapper.setFilter(filter);
+        }
+        super.setFilter(filter);
+    }
+
+    /**
+     * Returns the {@code HierarchyMapper} used by this data communicator.
+     *
+     * @return the hierarchy mapper used by this data communicator
+     */
+    protected HierarchyMapper<T, ?> getHierarchyMapper() {
+        return mapper;
     }
 }

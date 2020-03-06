@@ -1,17 +1,25 @@
 package com.vaadin.tests.components;
 
-import org.junit.Assert;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 
-import com.vaadin.data.HierarchyData;
-import com.vaadin.data.provider.InMemoryHierarchicalDataProvider;
+import com.vaadin.data.TreeData;
+import com.vaadin.data.provider.TreeDataProvider;
 import com.vaadin.event.CollapseEvent;
 import com.vaadin.event.CollapseEvent.CollapseListener;
 import com.vaadin.event.ExpandEvent;
 import com.vaadin.event.ExpandEvent.ExpandListener;
+import com.vaadin.server.ThemeResource;
 import com.vaadin.ui.Tree;
 
 public class TreeTest {
+
+    public static final String TEST_CAPTION = "test caption";
+    public static final String TEST_DESCRIPTION = "test description";
+    public static final String TEST_RESOURCE_ID = "nothing.gif";
 
     private static class TreeCollapseExpandListener
             implements ExpandListener<String>, CollapseListener<String> {
@@ -26,17 +34,17 @@ public class TreeTest {
 
         @Override
         public void itemCollapse(CollapseEvent<String> event) {
-            Assert.assertEquals("Source component was incorrect", tree,
+            assertEquals("Source component was incorrect", tree,
                     event.getComponent());
-            Assert.assertFalse("Multiple collapse events", collapsed);
+            assertFalse("Multiple collapse events", collapsed);
             collapsed = true;
         }
 
         @Override
         public void itemExpand(ExpandEvent<String> event) {
-            Assert.assertEquals("Source component was incorrect", tree,
+            assertEquals("Source component was incorrect", tree,
                     event.getComponent());
-            Assert.assertFalse("Multiple expand events", expanded);
+            assertFalse("Multiple expand events", expanded);
             expanded = true;
         }
 
@@ -52,24 +60,40 @@ public class TreeTest {
     @Test
     public void event_source_is_tree() {
         Tree<String> tree = new Tree<>();
-        HierarchyData<String> hierarchyData = new HierarchyData<>();
-        hierarchyData.addItem(null, "Foo");
-        hierarchyData.addItem("Foo", "Bar");
-        hierarchyData.addItem("Foo", "Baz");
-        tree.setDataProvider(
-                new InMemoryHierarchicalDataProvider<>(hierarchyData));
+        TreeData<String> treeData = new TreeData<>();
+        treeData.addItem(null, "Foo");
+        treeData.addItem("Foo", "Bar");
+        treeData.addItem("Foo", "Baz");
+        tree.setDataProvider(new TreeDataProvider<>(treeData));
 
         TreeCollapseExpandListener listener = new TreeCollapseExpandListener(
                 tree);
         tree.addExpandListener(listener);
         tree.addCollapseListener(listener);
 
-        Assert.assertFalse(listener.isExpanded());
+        assertFalse(listener.isExpanded());
         tree.expand("Foo");
-        Assert.assertTrue("Expand event not fired", listener.isExpanded());
-        Assert.assertFalse(listener.isCollapsed());
+        assertTrue("Item not expanded", tree.isExpanded("Foo"));
+        assertTrue("Expand event not fired", listener.isExpanded());
+        assertFalse(listener.isCollapsed());
         tree.collapse("Foo");
-        Assert.assertTrue("Collapse event not fired", listener.isCollapsed());
+        assertFalse("Item not collapsed", tree.isExpanded("Foo"));
+        assertTrue("Collapse event not fired", listener.isCollapsed());
     }
 
+    @Test
+    public void testComponentProperties() {
+        Tree<String> tree = new Tree<>();
+        tree.setCaption(TEST_CAPTION);
+        tree.setDescription(TEST_DESCRIPTION);
+        tree.setIcon(new ThemeResource(TEST_RESOURCE_ID));
+
+        assertEquals(TEST_CAPTION, tree.getCaption());
+        assertEquals(TEST_DESCRIPTION, tree.getDescription());
+        assertEquals(TEST_RESOURCE_ID, tree.getIcon().toString());
+
+        assertFalse(tree.isCaptionAsHtml());
+        tree.setCaptionAsHtml(true);
+        assertTrue(tree.isCaptionAsHtml());
+    }
 }

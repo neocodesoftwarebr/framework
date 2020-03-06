@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -65,11 +65,6 @@ public class ColorPickerSelect extends CustomComponent
 
     /**
      * Instantiates a new color picker select.
-     *
-     * @param rows
-     *            the rows
-     * @param columns
-     *            the columns
      */
     public ColorPickerSelect() {
 
@@ -133,10 +128,8 @@ public class ColorPickerSelect extends CustomComponent
 
                     colors[row][col] = new Color(
                             Color.HSVtoRGB(hue, saturation, value));
-                }
-
-                // The last row should have the black&white gradient
-                else {
+                } else {
+                    // The last row should have the black&white gradient
                     float hue = 0f;
                     float saturation = 0f;
                     float value = 1f - ((float) col / (float) columns);

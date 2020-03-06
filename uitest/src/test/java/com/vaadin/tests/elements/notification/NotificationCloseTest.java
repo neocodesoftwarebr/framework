@@ -2,12 +2,13 @@ package com.vaadin.tests.elements.notification;
 
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.vaadin.testbench.elements.ButtonElement;
 import com.vaadin.testbench.elements.NotificationElement;
 import com.vaadin.tests.tb3.MultiBrowserTest;
+
+import static org.junit.Assert.assertTrue;
 
 public class NotificationCloseTest extends MultiBrowserTest {
 
@@ -42,11 +43,11 @@ public class NotificationCloseTest extends MultiBrowserTest {
         ButtonElement btn = $(ButtonElement.class).id(id);
         // show notification
         btn.click();
+        sleep(100);
         $(NotificationElement.class).get(0).close();
         List<NotificationElement> notifications = $(NotificationElement.class)
                 .all();
         // check that all notifications are closed
-        Assert.assertTrue("There are open notifications",
-                notifications.isEmpty());
+        assertTrue("There are open notifications", notifications.isEmpty());
     }
 }

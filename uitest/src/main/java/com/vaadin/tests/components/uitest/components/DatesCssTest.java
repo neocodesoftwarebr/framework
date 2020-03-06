@@ -1,17 +1,20 @@
 package com.vaadin.tests.components.uitest.components;
 
 import java.time.LocalDate;
+import java.util.Iterator;
 
 import com.vaadin.shared.ui.datefield.DateResolution;
 import com.vaadin.tests.components.TestDateField;
 import com.vaadin.tests.components.uitest.TestSampler;
 import com.vaadin.ui.AbstractDateField;
+import com.vaadin.ui.AbstractField;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.DateField;
 import com.vaadin.ui.GridLayout;
 import com.vaadin.ui.InlineDateField;
 import com.vaadin.v7.ui.themes.ChameleonTheme;
 
+@SuppressWarnings("deprecation")
 public class DatesCssTest extends GridLayout {
 
     private TestSampler parent;
@@ -29,7 +32,8 @@ public class DatesCssTest extends GridLayout {
         createDateFieldWith("Small", ChameleonTheme.DATEFIELD_SMALL, null);
         createDateFieldWith("Big", ChameleonTheme.DATEFIELD_BIG, null);
 
-        AbstractDateField<LocalDate, DateResolution> df = new DateField("Popup date field");
+        AbstractDateField<LocalDate, DateResolution> df = new DateField(
+                "Popup date field");
         df.setId("datefield" + debugIdCounter++);
         df.setValue(date);
         addComponent(df);
@@ -44,11 +48,22 @@ public class DatesCssTest extends GridLayout {
                 "130px");
         createDateFieldWith("Big 130px", ChameleonTheme.DATEFIELD_BIG, "130px");
 
+        parent.addReadOnlyChangeListener(event -> {
+            Iterator<Component> iterator = iterator();
+            while (iterator.hasNext()) {
+                Component c = iterator.next();
+                if (c instanceof AbstractField) {
+                    AbstractField<?> af = (AbstractField<?>) c;
+                    af.setReadOnly(!af.isReadOnly());
+                }
+            }
+        });
     }
 
     private void createDateFieldWith(String caption, String primaryStyleName,
             String width) {
-        AbstractDateField<LocalDate, DateResolution> df = new TestDateField("Date field");
+        AbstractDateField<LocalDate, DateResolution> df = new TestDateField(
+                "Date field");
         df.setId("datefield" + debugIdCounter++);
         df.setValue(date);
 

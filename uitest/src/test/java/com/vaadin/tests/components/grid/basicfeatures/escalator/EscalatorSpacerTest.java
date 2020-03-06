@@ -1,18 +1,3 @@
-/*
- * Copyright 2000-2016 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.tests.components.grid.basicfeatures.escalator;
 
 import static org.junit.Assert.assertEquals;
@@ -48,7 +33,7 @@ public class EscalatorSpacerTest extends EscalatorBasicClientFeaturesTest {
     // translate3d(0px, 40px, 123px);
     // translate3d(24px, 15.251px, 0);
     // translate(0, 40px);
-    private final static String TRANSLATE_VALUE_REGEX =
+    private static final String TRANSLATE_VALUE_REGEX =
             "translate(?:3d|)" // "translate" or "translate3d"
             + "\\(" // literal "("
                 + "(" // start capturing the x argument
@@ -74,7 +59,7 @@ public class EscalatorSpacerTest extends EscalatorBasicClientFeaturesTest {
 
     // 40px;
     // 12.34px
-    private final static String PIXEL_VALUE_REGEX =
+    private static final String PIXEL_VALUE_REGEX =
             "(" // capture the pixel value
                 + "[0-9]+" // the pixel argument
                 + "(?:" // start of the subpixel part of the value
@@ -87,16 +72,16 @@ public class EscalatorSpacerTest extends EscalatorBasicClientFeaturesTest {
     //@formatter:on
 
     // also matches "-webkit-transform";
-    private final static Pattern TRANSFORM_CSS_PATTERN = Pattern
+    private static final Pattern TRANSFORM_CSS_PATTERN = Pattern
             .compile("transform: (.*?);");
-    private final static Pattern TOP_CSS_PATTERN = Pattern.compile(
+    private static final Pattern TOP_CSS_PATTERN = Pattern.compile(
             "top: ([0-9]+(?:\\.[0-9]+)?(?:px)?);?", Pattern.CASE_INSENSITIVE);
-    private final static Pattern LEFT_CSS_PATTERN = Pattern.compile(
+    private static final Pattern LEFT_CSS_PATTERN = Pattern.compile(
             "left: ([0-9]+(?:\\.[0-9]+)?(?:px)?);?", Pattern.CASE_INSENSITIVE);
 
-    private final static Pattern TRANSLATE_VALUE_PATTERN = Pattern
+    private static final Pattern TRANSLATE_VALUE_PATTERN = Pattern
             .compile(TRANSLATE_VALUE_REGEX);
-    private final static Pattern PIXEL_VALUE_PATTERN = Pattern
+    private static final Pattern PIXEL_VALUE_PATTERN = Pattern
             .compile(PIXEL_VALUE_REGEX, Pattern.CASE_INSENSITIVE);
 
     @Before
@@ -290,12 +275,17 @@ public class EscalatorSpacerTest extends EscalatorBasicClientFeaturesTest {
         selectMenuPath(FEATURES, SPACERS, ROW_1, SET_100PX);
 
         /*
-         * we check for row -3 instead of -1, because escalator has two rows
+         * we check for row -2 instead of -1, because escalator has one row
          * buffered underneath the footer
          */
         selectMenuPath(COLUMNS_AND_ROWS, BODY_ROWS, SCROLL_TO, ROW_75);
         Thread.sleep(500);
-        assertEquals("Row 75: 0,75", getBodyCell(-3, 0).getText());
+        TestBenchElement cell75 = getBodyCell(-2, 0);
+        assertEquals("Row 75: 0,75", cell75.getText());
+        // confirm the scroll position
+        WebElement footer = findElement(By.className("v-escalator-footer"));
+        assertEquals(footer.getLocation().y,
+                cell75.getLocation().y + cell75.getSize().height);
 
         selectMenuPath(COLUMNS_AND_ROWS, BODY_ROWS, SCROLL_TO, ROW_25);
         Thread.sleep(500);
@@ -421,17 +411,52 @@ public class EscalatorSpacerTest extends EscalatorBasicClientFeaturesTest {
     }
 
     @Test
-    public void spacersAreInCorrectDomPositionAfterScroll() {
+    public void spacersAreInCorrectDomPositionAfterScroll()
+            throws InterruptedException {
         selectMenuPath(FEATURES, SPACERS, ROW_1, SET_100PX);
 
-        scrollVerticallyTo(32); // roughly one row's worth
+        scrollVerticallyTo(40); // roughly two rows' worth
 
+        // both rows should still be within DOM after this little scrolling, so
+        // the spacer should be the third element within the body (index: 2)
         WebElement tbody = getEscalator().findElement(By.tagName("tbody"));
-        WebElement spacer = getChild(tbody, 1);
+        WebElement spacer = getChild(tbody, 2);
         String cssClass = spacer.getAttribute("class");
         assertTrue(
-                "element index 1 was not a spacer (class=\"" + cssClass + "\")",
+                "element index 2 was not a spacer (class=\"" + cssClass + "\")",
                 cssClass.contains("-spacer"));
+
+        // Scroll to last DOM row (Row 20). The exact position varies a bit
+        // depending on the browser.
+        int scrollTo = 172;
+        while (scrollTo < 176) {
+            scrollVerticallyTo(scrollTo);
+            Thread.sleep(500);
+
+            // if spacer is still the third (index: 2) body element, i.e. not
+            // enough scrolling to re-purpose any rows, scroll a bit further
+            spacer = getChild(tbody, 2);
+            cssClass = spacer.getAttribute("class");
+            if (cssClass.contains("-spacer")) {
+                ++scrollTo;
+            } else {
+                break;
+            }
+        }
+        if (getChild(tbody, 20).getText().startsWith("Row 22:")) {
+            // Some browsers scroll too much, spacer should be out of visual
+            // range
+            assertNull("Element found where there should be none",
+                    getChild(tbody, 21));
+        } else {
+            // second row should still be within DOM but the first row out of
+            // it, so the spacer should be the second element within the body
+            // (index: 1)
+            spacer = getChild(tbody, 1);
+            cssClass = spacer.getAttribute("class");
+            assertTrue("element index 1 was not a spacer (class=\"" + cssClass
+                    + "\")", cssClass.contains("-spacer"));
+        }
     }
 
     @Test
@@ -517,7 +542,7 @@ public class EscalatorSpacerTest extends EscalatorBasicClientFeaturesTest {
             return getTranslateValues(transform);
         }
 
-        double[] result = new double[] { -1, -1 };
+        double[] result = { -1, -1 };
         String left = getLeftFromStyle(style);
         if (left != null) {
             result[0] = getPixelValue(left);

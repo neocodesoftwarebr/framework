@@ -2,7 +2,6 @@ package com.vaadin.tests.components.grid;
 
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.openqa.selenium.WebElement;
 
@@ -10,6 +9,9 @@ import com.vaadin.testbench.By;
 import com.vaadin.testbench.elements.GridElement;
 import com.vaadin.testbench.parallel.TestCategory;
 import com.vaadin.tests.tb3.MultiBrowserTest;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @TestCategory("grid")
 public class GridEditorMultiselectTest extends MultiBrowserTest {
@@ -35,13 +37,14 @@ public class GridEditorMultiselectTest extends MultiBrowserTest {
         openTestURL();
         GridElement grid = openEditor();
         grid.getEditor().cancel();
+        sleep(100);
         assertCheckboxesEnabled(grid, true);
     }
 
     private GridElement openEditor() {
         GridElement grid = $(GridElement.class).first();
         grid.getRow(0).doubleClick();
-        Assert.assertTrue("Grid editor should be displayed.",
+        assertTrue("Grid editor should be displayed.",
                 grid.getEditor().isDisplayed());
         return grid;
     }
@@ -50,7 +53,7 @@ public class GridEditorMultiselectTest extends MultiBrowserTest {
         List<WebElement> checkboxes = grid
                 .findElements(By.xpath("//input[@type='checkbox']"));
         for (WebElement checkbox : checkboxes) {
-            Assert.assertEquals(
+            assertEquals(
                     "Select checkboxes should be "
                             + (isEnabled ? "enabled" : "disabled"),
                     isEnabled, checkbox.isEnabled());

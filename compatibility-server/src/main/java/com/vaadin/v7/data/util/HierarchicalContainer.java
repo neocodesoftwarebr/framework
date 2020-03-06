@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,8 +37,9 @@ import com.vaadin.v7.data.Item;
  * @author Vaadin Ltd.
  * @since 3.0
  *
- * @deprecated As of 8.0, no replacement available yet. A new hierarchical data API is planned in an upcoming
- * version of Vaadin Framework 8.
+ * @deprecated Use an appropriate implementation of
+ *             {@code HierarchicalDataProvider} such as {@code TreeDataProvider}
+ *             or {@code AbstractBackEndHierarchicalDataProvider}.
  */
 @Deprecated
 @SuppressWarnings("serial")
@@ -52,23 +54,23 @@ public class HierarchicalContainer extends IndexedContainer
     /**
      * Mapping from Item ID to parent Item ID.
      */
-    private final HashMap<Object, Object> parent = new HashMap<Object, Object>();
+    private final Map<Object, Object> parent = new HashMap<Object, Object>();
 
     /**
      * Mapping from Item ID to parent Item ID for items included in the filtered
      * container.
      */
-    private HashMap<Object, Object> filteredParent = null;
+    private Map<Object, Object> filteredParent = null;
 
     /**
      * Mapping from Item ID to a list of child IDs.
      */
-    private final HashMap<Object, LinkedList<Object>> children = new HashMap<Object, LinkedList<Object>>();
+    private final Map<Object, LinkedList<Object>> children = new HashMap<Object, LinkedList<Object>>();
 
     /**
      * Mapping from Item ID to a list of child IDs when filtered
      */
-    private HashMap<Object, LinkedList<Object>> filteredChildren = null;
+    private Map<Object, LinkedList<Object>> filteredChildren = null;
 
     /**
      * List that contains all root elements of the container.
@@ -591,8 +593,7 @@ public class HierarchicalContainer extends IndexedContainer
     public boolean removeItemRecursively(Object itemId) {
         disableContentsChangeEvents();
         try {
-            boolean removeItemRecursively = removeItemRecursively(this, itemId);
-            return removeItemRecursively;
+            return removeItemRecursively(this, itemId);
         } finally {
             enableAndFireContentsChangeEvents();
         }
@@ -613,16 +614,15 @@ public class HierarchicalContainer extends IndexedContainer
         boolean success = true;
         Collection<?> children2 = container.getChildren(itemId);
         if (children2 != null) {
-            Object[] array = children2.toArray();
-            for (int i = 0; i < array.length; i++) {
+            for (Object o : children2.toArray()) {
                 boolean removeItemRecursively = removeItemRecursively(container,
-                        array[i]);
+                        o);
                 if (!removeItemRecursively) {
                     success = false;
                 }
             }
         }
-        // remove the root of subtree if children where succesfully removed
+        // remove the root of subtree if children where successfully removed
         if (success) {
             success = container.removeItem(itemId);
         }

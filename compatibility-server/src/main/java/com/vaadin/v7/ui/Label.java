@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -321,15 +321,15 @@ public class Label extends AbstractLegacyComponent implements Property<String>,
             VALUE_CHANGE_METHOD = Property.ValueChangeListener.class
                     .getDeclaredMethod("valueChange",
                             new Class[] { Property.ValueChangeEvent.class });
-        } catch (final java.lang.NoSuchMethodException e) {
+        } catch (final NoSuchMethodException e) {
             // This should never happen
-            throw new java.lang.RuntimeException(
+            throw new RuntimeException(
                     "Internal error finding methods in Label");
         }
     }
 
     /**
-     * Value change event
+     * Value change event.
      *
      * @author Vaadin Ltd.
      * @since 3.0
@@ -339,7 +339,7 @@ public class Label extends AbstractLegacyComponent implements Property<String>,
             implements Property.ValueChangeEvent {
 
         /**
-         * New instance of text change event
+         * New instance of text change event.
          *
          * @param source
          *            the Source of the event.
@@ -375,7 +375,7 @@ public class Label extends AbstractLegacyComponent implements Property<String>,
     /**
      * @deprecated As of 7.0, replaced by
      *             {@link #addValueChangeListener(Property.ValueChangeListener)}
-     **/
+     */
     @Override
     @Deprecated
     public void addListener(Property.ValueChangeListener listener) {
@@ -399,7 +399,7 @@ public class Label extends AbstractLegacyComponent implements Property<String>,
     /**
      * @deprecated As of 7.0, replaced by
      *             {@link #removeValueChangeListener(Property.ValueChangeListener)}
-     **/
+     */
     @Override
     @Deprecated
     public void removeListener(Property.ValueChangeListener listener) {
@@ -505,7 +505,7 @@ public class Label extends AbstractLegacyComponent implements Property<String>,
      */
     private String stripTags(String xml) {
 
-        final StringBuffer res = new StringBuffer();
+        final StringBuilder res = new StringBuilder();
 
         int processed = 0;
         final int xmlLen = xml.length();

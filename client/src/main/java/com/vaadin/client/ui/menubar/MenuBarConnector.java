@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -21,10 +21,12 @@ import java.util.Stack;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.Command;
+import com.google.gwt.user.client.Timer;
 import com.vaadin.client.ApplicationConnection;
 import com.vaadin.client.Paintable;
 import com.vaadin.client.TooltipInfo;
 import com.vaadin.client.UIDL;
+import com.vaadin.client.annotations.OnStateChange;
 import com.vaadin.client.ui.AbstractComponentConnector;
 import com.vaadin.client.ui.Icon;
 import com.vaadin.client.ui.SimpleManagedLayout;
@@ -51,127 +53,139 @@ public class MenuBarConnector extends AbstractComponentConnector
             return;
         }
 
-        getWidget().htmlContentAllowed = uidl
+        VMenuBar widget = getWidget();
+        widget.htmlContentAllowed = uidl
                 .hasAttribute(MenuBarConstants.HTML_CONTENT_ALLOWED);
 
-        getWidget().openRootOnHover = uidl
+        widget.openRootOnHover = uidl
                 .getBooleanAttribute(MenuBarConstants.OPEN_ROOT_MENU_ON_HOWER);
 
-        getWidget().enabled = isEnabled();
+        widget.enabled = isEnabled();
 
         // For future connections
-        getWidget().client = client;
-        getWidget().uidlId = uidl.getId();
+        widget.client = client;
+        widget.uidlId = uidl.getId();
+        Timer timer = new Timer() {
 
-        // Empty the menu every time it receives new information
-        if (!getWidget().getItems().isEmpty()) {
-            getWidget().clearItems();
-        }
-
-        UIDL options = uidl.getChildUIDL(0);
-
-        if (null != getState()
-                && !ComponentStateUtil.isUndefinedWidth(getState())) {
-            UIDL moreItemUIDL = options.getChildUIDL(0);
-            StringBuffer itemHTML = new StringBuffer();
-
-            if (moreItemUIDL.hasAttribute("icon")) {
-                Icon icon = client
-                        .getIcon(moreItemUIDL.getStringAttribute("icon"));
-                if (icon != null) {
-                    itemHTML.append(icon.getElement().getString());
+            @Override
+            public void run() {
+                // Empty the menu every time it receives new information
+                if (!widget.getItems().isEmpty()) {
+                    widget.clearItems();
                 }
-            }
 
-            String moreItemText = moreItemUIDL.getStringAttribute("text");
-            if ("".equals(moreItemText)) {
-                moreItemText = "&#x25BA;";
-            }
-            itemHTML.append(moreItemText);
+                UIDL options = uidl.getChildUIDL(0);
 
-            getWidget().moreItem = GWT.create(VMenuBar.CustomMenuItem.class);
-            getWidget().moreItem.setHTML(itemHTML.toString());
-            getWidget().moreItem.setCommand(VMenuBar.emptyCommand);
+                if (null != getState()
+                        && !ComponentStateUtil.isUndefinedWidth(getState())) {
+                    UIDL moreItemUIDL = options.getChildUIDL(0);
+                    StringBuilder itemHTML = new StringBuilder();
 
-            getWidget().collapsedRootItems = new VMenuBar(true, getWidget());
-            getWidget().moreItem.setSubMenu(getWidget().collapsedRootItems);
-            getWidget().moreItem.addStyleName(
-                    getWidget().getStylePrimaryName() + "-more-menuitem");
-        }
-
-        UIDL uidlItems = uidl.getChildUIDL(1);
-        Iterator<Object> itr = uidlItems.getChildIterator();
-        Stack<Iterator<Object>> iteratorStack = new Stack<>();
-        Stack<VMenuBar> menuStack = new Stack<>();
-        VMenuBar currentMenu = getWidget();
-
-        while (itr.hasNext()) {
-            UIDL item = (UIDL) itr.next();
-            VMenuBar.CustomMenuItem currentItem = null;
-
-            final int itemId = item.getIntAttribute("id");
-
-            boolean itemHasCommand = item.hasAttribute("command");
-            boolean itemIsCheckable = item
-                    .hasAttribute(MenuBarConstants.ATTRIBUTE_CHECKED);
-
-            String itemHTML = getWidget().buildItemHTML(item);
-
-            Command cmd = null;
-            if (!item.hasAttribute("separator")) {
-                if (itemHasCommand || itemIsCheckable) {
-                    // Construct a command that fires onMenuClick(int) with the
-                    // item's id-number
-                    cmd = new Command() {
-                        @Override
-                        public void execute() {
-                            getWidget().hostReference.onMenuClick(itemId);
+                    if (moreItemUIDL.hasAttribute("icon")) {
+                        Icon icon = client.getIcon(
+                                moreItemUIDL.getStringAttribute("icon"));
+                        if (icon != null) {
+                            itemHTML.append(icon.getElement().getString());
                         }
-                    };
+                    }
+
+                    String moreItemText = moreItemUIDL
+                            .getStringAttribute("text");
+                    if ("".equals(moreItemText)) {
+                        moreItemText = "&#x25BA;";
+                    }
+                    itemHTML.append(moreItemText);
+
+                    widget.moreItem = GWT.create(VMenuBar.CustomMenuItem.class);
+                    widget.moreItem.setHTML(itemHTML.toString());
+                    widget.moreItem.setCommand(VMenuBar.emptyCommand);
+
+                    widget.collapsedRootItems = new VMenuBar(true, widget);
+                    widget.moreItem.setSubMenu(widget.collapsedRootItems);
+                    widget.moreItem.addStyleName(
+                            widget.getStylePrimaryName() + "-more-menuitem");
                 }
-            }
 
-            currentItem = currentMenu.addItem(itemHTML.toString(), cmd);
-            currentItem.updateFromUIDL(item, client);
+                UIDL uidlItems = uidl.getChildUIDL(1);
+                Iterator<Object> itr = uidlItems.iterator();
+                Stack<Iterator<Object>> iteratorStack = new Stack<>();
+                Stack<VMenuBar> menuStack = new Stack<>();
+                VMenuBar currentMenu = widget;
 
-            if (item.getChildCount() > 0) {
-                menuStack.push(currentMenu);
-                iteratorStack.push(itr);
-                itr = item.getChildIterator();
-                currentMenu = new VMenuBar(true, currentMenu);
-                client.getVTooltip().connectHandlersToWidget(currentMenu);
-                // this is the top-level style that also propagates to items -
-                // any item specific styles are set above in
-                // currentItem.updateFromUIDL(item, client)
-                if (ComponentStateUtil.hasStyles(getState())) {
-                    for (String style : getState().styles) {
-                        currentMenu.addStyleDependentName(style);
+                while (itr.hasNext()) {
+                    UIDL item = (UIDL) itr.next();
+                    VMenuBar.CustomMenuItem currentItem = null;
+
+                    final int itemId = item.getIntAttribute("id");
+
+                    boolean itemHasCommand = item.hasAttribute("command");
+                    boolean itemIsCheckable = item
+                            .hasAttribute(MenuBarConstants.ATTRIBUTE_CHECKED);
+
+                    String itemHTML = widget.buildItemHTML(item);
+
+                    Command cmd = null;
+                    if (!item.hasAttribute("separator")) {
+                        if (itemHasCommand || itemIsCheckable) {
+                            // Construct a command that fires onMenuClick(int)
+                            // with the
+                            // item's id-number
+                            cmd = () -> widget.hostReference
+                                    .onMenuClick(itemId);
+                        }
+                    }
+
+                    currentItem = currentMenu.addItem(itemHTML, cmd);
+                    currentItem.setId("" + itemId);
+                    currentItem.updateFromUIDL(item, client);
+
+                    if (item.getChildCount() > 0) {
+                        menuStack.push(currentMenu);
+                        iteratorStack.push(itr);
+                        itr = item.iterator();
+                        currentMenu = new VMenuBar(true, currentMenu);
+                        client.getVTooltip()
+                                .connectHandlersToWidget(currentMenu);
+                        // this is the top-level style that also propagates to
+                        // items -
+                        // any item specific styles are set above in
+                        // currentItem.updateFromUIDL(item, client)
+                        if (ComponentStateUtil.hasStyles(getState())) {
+                            for (String style : getState().styles) {
+                                currentMenu.addStyleDependentName(style);
+                            }
+                        }
+                        currentItem.setSubMenu(currentMenu);
+                    }
+
+                    while (!itr.hasNext() && !iteratorStack.empty()) {
+                        boolean hasCheckableItem = false;
+                        for (VMenuBar.CustomMenuItem menuItem : currentMenu
+                                .getItems()) {
+                            hasCheckableItem = hasCheckableItem
+                                    || menuItem.isCheckable();
+                        }
+                        if (hasCheckableItem) {
+                            currentMenu.addStyleDependentName("check-column");
+                        } else {
+                            currentMenu
+                                    .removeStyleDependentName("check-column");
+                        }
+
+                        itr = iteratorStack.pop();
+                        currentMenu = menuStack.pop();
                     }
                 }
-                currentItem.setSubMenu(currentMenu);
             }
-
-            while (!itr.hasNext() && !iteratorStack.empty()) {
-                boolean hasCheckableItem = false;
-                for (VMenuBar.CustomMenuItem menuItem : currentMenu
-                        .getItems()) {
-                    hasCheckableItem = hasCheckableItem
-                            || menuItem.isCheckable();
-                }
-                if (hasCheckableItem) {
-                    currentMenu.addStyleDependentName("check-column");
-                } else {
-                    currentMenu.removeStyleDependentName("check-column");
-                }
-
-                itr = iteratorStack.pop();
-                currentMenu = menuStack.pop();
-            }
-        } // while
-
-        getLayoutManager().setNeedsHorizontalLayout(this);
-
-    }// updateFromUIDL
+        };
+        getLayoutManager().setNeedsHorizontalLayout(MenuBarConnector.this);
+        if (widget.mouseDownPressed) {
+            timer.schedule(getState().delayMs);
+            widget.mouseDownPressed = false;
+        } else {
+            timer.run();
+        }
+    }
 
     @Override
     public VMenuBar getWidget() {
@@ -218,5 +232,20 @@ public class MenuBarConnector extends AbstractComponentConnector
          * is used.
          */
         return true;
+    }
+
+    @OnStateChange("enabled")
+    void updateEnabled() {
+        if (getState().enabled) {
+            getWidget().getElement().removeAttribute("aria-disabled");
+        } else {
+            getWidget().getElement().setAttribute("aria-disabled", "true");
+        }
+    }
+
+    @OnStateChange("tabIndex")
+    void updateTabIndex() {
+        getWidget().getElement().setAttribute("tabindex",
+                String.valueOf(getState().tabIndex));
     }
 }

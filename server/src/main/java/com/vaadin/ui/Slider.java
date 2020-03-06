@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -258,6 +258,31 @@ public class Slider extends AbstractField<Double> {
         getState().resolution = resolution;
     }
 
+    /**
+     * Sets the slider to update its value when the user clicks on it. By
+     * default, the slider value is updated by dragging the slider's handle or
+     * clicking arrows.
+     *
+     * @param updateValueOnClick
+     *            {@code true} to update the value of the slider on click,
+     *            {@code false} otherwise.
+     * @since 8.8
+     */
+    public void setUpdateValueOnClick(boolean updateValueOnClick) {
+        getState().updateValueOnClick = updateValueOnClick;
+    }
+
+    /**
+     * Returns whether the slider updates its value on user click.
+     *
+     * @return {@code true} if the Slider updates its value on click. By
+     *         default, returns {@code false}
+     * @since 8.8
+     */
+    public boolean isUpdateValueOnClick() {
+        return getState(false).updateValueOnClick;
+    }
+
     private double getRoundedValue(Double value) {
         final double v = value.doubleValue();
         final int resolution = getResolution();
@@ -298,7 +323,7 @@ public class Slider extends AbstractField<Double> {
      */
     @Override
     public void setValue(Double value) {
-        Objects.requireNonNull(value, "color cannot be null");
+        Objects.requireNonNull(value, "Value cannot be null");
         super.setValue(value);
     }
 

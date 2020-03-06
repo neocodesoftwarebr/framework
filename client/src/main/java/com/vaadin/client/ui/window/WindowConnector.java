@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,7 +18,6 @@ package com.vaadin.client.ui.window;
 import java.util.logging.Logger;
 
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Node;
@@ -30,6 +29,9 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
+import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.KeyUpEvent;
+import com.google.gwt.event.dom.client.KeyUpHandler;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Window;
 import com.vaadin.client.ApplicationConnection;
@@ -68,7 +70,7 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
     };
 
     abstract class WindowEventHandler
-            implements ClickHandler, DoubleClickHandler {
+            implements ClickHandler, DoubleClickHandler, KeyUpHandler {
     }
 
     private WindowEventHandler maximizeRestoreClickHandler = new WindowEventHandler() {
@@ -92,6 +94,18 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
                 onMaximizeRestore();
             }
         }
+
+        @Override
+        public void onKeyUp(KeyUpEvent event) {
+            final int keyCode = event.getNativeKeyCode();
+            final Element target = event.getNativeEvent().getEventTarget()
+                    .cast();
+            // key ENTER or SPACE on maximize/restore box
+            if (target == getWidget().maximizeRestoreBox
+                    && isKeyEnterOrSpace(keyCode)) {
+                onMaximizeRestore();
+            }
+        }
     };
 
     @Override
@@ -106,6 +120,7 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
         VWindow window = getWidget();
         window.id = getConnectorId();
         window.client = getConnection();
+        window.connector = this;
 
         getLayoutManager().registerDependency(this,
                 window.contentPanel.getElement());
@@ -115,6 +130,7 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
         window.addHandler(maximizeRestoreClickHandler, ClickEvent.getType());
         window.addHandler(maximizeRestoreClickHandler,
                 DoubleClickEvent.getType());
+        window.addHandler(maximizeRestoreClickHandler, KeyUpEvent.getType());
 
         window.setOwner(getConnection().getUIConnector().getWidget());
 
@@ -252,7 +268,7 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
                 childStyle.setPosition(Position.ABSOLUTE);
 
                 Style wrapperStyle = contentElement.getStyle();
-                if (window.getElement().getStyle().getWidth().length() == 0
+                if (window.getElement().getStyle().getWidth().isEmpty()
                         && !content.isRelativeWidth()) {
                     /*
                      * Need to lock width to make undefined width work even with
@@ -309,8 +325,9 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
                     || "video".equalsIgnoreCase(old.getTagName())) {
                 if (!old.hasAttribute("controls")
                         && "audio".equalsIgnoreCase(old.getTagName())) {
-                    return null; // nothing to animate, so we won't add this to
-                                 // the clone
+                    // nothing to animate, so we won't add this to
+                    // the clone
+                    return null;
                 }
                 Element newEl = DOM.createElement(old.getTagName());
                 if (old.hasAttribute("controls")) {
@@ -323,6 +340,23 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
                 if (old.hasAttribute("class")) {
                     newEl.setAttribute("class", old.getAttribute("class"));
                 }
+                return newEl;
+            }
+
+            if ("iframe".equalsIgnoreCase(old.getTagName())
+                    && old.hasAttribute("src")
+                    && old.getAttribute("src").contains("APP/connector")) {
+                // an iframe reloads when reattached to the DOM, but
+                // unfortunately, when newEl is reattached, server-side
+                // resource (e.g. generated PDF) is already gone, so this will
+                // end up with 404, which might be undesirable.
+                // Instead of the resource that is not available anymore,
+                // let's just use empty iframe.
+                // See
+                // https://github.com/vaadin/framework/issues/11369
+                // for details of the issue this works around
+                Element newEl = old.cloneNode(false).cast();
+                newEl.setAttribute("src", "about:blank");
                 return newEl;
             }
         }
@@ -403,13 +437,7 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
         window.centered = state.centered;
         // Ensure centering before setting visible (#16486)
         if (window.centered && getState().windowMode != WindowMode.MAXIMIZED) {
-            Scheduler.get().scheduleFinally(new ScheduledCommand() {
-
-                @Override
-                public void execute() {
-                    getWidget().center();
-                }
-            });
+            Scheduler.get().scheduleFinally(() -> getWidget().center());
         }
         window.setVisible(true);
     }
@@ -498,5 +526,9 @@ public class WindowConnector extends AbstractSingleComponentContainerConnector
     public void onWindowMove(WindowMoveEvent event) {
         getRpcProxy(WindowServerRpc.class).windowMoved(event.getNewX(),
                 event.getNewY());
+    }
+
+    private boolean isKeyEnterOrSpace(int keyCode) {
+        return keyCode == KeyCodes.KEY_ENTER || keyCode == KeyCodes.KEY_SPACE;
     }
 }

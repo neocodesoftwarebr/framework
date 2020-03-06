@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -55,7 +55,7 @@ public class ApplicationConstants implements Serializable {
     public static final String FRONTEND_PROTOCOL_PREFIX = "frontend://";
 
     /**
-     * Prefix used for theme resource URLs
+     * Prefix used for theme resource URLs.
      *
      * @see com.vaadin.server.ThemeResource
      * @since 7.5.0
@@ -150,20 +150,20 @@ public class ApplicationConstants implements Serializable {
 
     /**
      * Name of the parameter used to transmit the push connection identifier.
-     * 
+     *
      * @since 8.0.6
      */
     public static final String PUSH_ID_PARAMETER = "v-pushId";
 
     /**
-     * The name of the parameter used to transmit RPC invocations
+     * The name of the parameter used to transmit RPC invocations.
      *
      * @since 7.2
      */
     public static final String RPC_INVOCATIONS = "rpc";
 
     /**
-     * The name of the parameter used to transmit the CSRF token
+     * The name of the parameter used to transmit the CSRF token.
      *
      * @since 7.2
      */
@@ -199,11 +199,20 @@ public class ApplicationConstants implements Serializable {
 
     /**
      * The name of the parameter used for sending the widget set version to the
-     * server
+     * server.
      *
      * @since 7.6
      */
     public static final String WIDGETSET_VERSION_ID = "wsver";
+
+    /**
+     * A request attribute name to store the part of pathInfo that was used to
+     * select the UI. Will be used by default Navigator to separate view
+     * identifiers from UI. This can be set by custom UI providers.
+     *
+     * @since 8.2
+     */
+    public static final String UI_ROOT_PATH = "com.vaadin.server.UI_ROOT_PATH";
 
     /**
      * Content type to use for text/html responses (should always be UTF-8).
@@ -243,5 +252,12 @@ public class ApplicationConstants implements Serializable {
      */
     public static final String FRONTEND_URL_ES5_DEFAULT_VALUE = VAADIN_PROTOCOL_PREFIX
             + "frontend/es5/";
+
+    /**
+     * Name of the HTML5 DnD Polyfill JavaScript file.
+     *
+     * @since 8.1
+     */
+    public static final String MOBILE_DND_POLYFILL_JS = "drag-drop-polyfill.min.js";
 
 }

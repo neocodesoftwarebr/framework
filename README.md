@@ -1,3 +1,5 @@
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/vaadin/framework-8?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 # Vaadin Framework
 
 *[Vaadin Framework](https://vaadin.com/framework) allows you to build modern web apps efficiently in plain Java, without touching low level web technologies.*
@@ -18,12 +20,12 @@ The distribution files can be built by running the standard Maven goal `mvn inst
 1. Run
 <code>git clone https://github.com/vaadin/framework.git</code>
 command or clone the repository your favorite Git tool.
-If using Windows, you might want to add these Git settings: `core.autocrlf=false` and `core.fileMode=false`.
+If using Windows, you might want to add these Git settings: `core.autocrlf=false`, `core.fileMode=false` and `core.longpaths=true`.
 1. Run <code>mvn install</code> in the project root.
 Note that the first compilation takes a while to finish as maven downloads dependencies used in the projects.
 1. Start Eclipse with the workspace you would like to use. It is usually a good idea to use the parent folder of the Git repository as the workspace folder.
 1. Import the project into Eclipse as a maven project. Use *File* -> *Import* -> *Maven* -> *Existing Maven Projects*.
-1. Select the *vaadin* folder (where you cloned the project)
+1. Select the *framework* folder (where you cloned the project)
 1. Click “Finish” to complete the import of Vaadin Framework
 
 Now the project should compile without further configuration.
@@ -61,9 +63,11 @@ The following preferences need to be set to keep the project consistent. You nee
 1. Type in <code>jetty:run-exploded</code> into *Goals* and click *Run*
 1. Open URL [http://localhost:8888/run/&lt;testUI&gt;](http://localhost:8888/run/<testUI>)
 
-## Setting up IntelliJ IDEA to Develop Vaadin 7
+For full instructions please visit [README-TESTS.md](README-TESTS.md).
 
-1. Intall and run IDEA. Ultimate Edition is better but Community Edition should also work.
+## Setting up IntelliJ IDEA to Develop Vaadin Framework 8
+
+1. Install and run IDEA. Ultimate Edition is better but Community Edition should also work.
 1. Ensure if Git and Maven plugins are installed, properly configured and enabled.
 1. Clone the repository, using menu VCS -> Checkout from Version Control -> Git -> Git Repository URL -> https://github.com/vaadin/framework.git.
   When the repository is cloned, do **NOT** open it as a project.
@@ -76,6 +80,8 @@ The following preferences need to be set to keep the project consistent. You nee
 1. Open *Maven Projects*
 1. Open *vaadin-uitest* -> *Plugins* -> *jetty* -> *jetty:run-exploded*
 1. Open URL [http://localhost:8888/run/&lt;testUI&gt;](http://localhost:8888/run/<testUI>)
+
+For full instructions please visit [README-TESTS.md](README-TESTS.md).
 
 ### Running a Development Server
 

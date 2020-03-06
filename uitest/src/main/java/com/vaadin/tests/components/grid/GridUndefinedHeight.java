@@ -26,10 +26,11 @@ public class GridUndefinedHeight extends AbstractTestUI {
         oldGrid.setHeightMode(
                 com.vaadin.v7.shared.ui.grid.HeightMode.UNDEFINED);
 
-        layout.addComponents(grid, oldGrid, new Button("Add header row", e -> {
-            grid.appendHeaderRow();
-            oldGrid.appendHeaderRow();
-        }));
+        layout.addComponents(grid, oldGrid,
+                new Button("Add header row", event -> {
+                    grid.appendHeaderRow();
+                    oldGrid.appendHeaderRow();
+                }));
         layout.setHeight("600px");
         layout.setExpandRatio(grid, 1.0f);
         layout.setExpandRatio(oldGrid, 1.0f);

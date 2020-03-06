@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,11 +17,9 @@
 package com.vaadin.client.ui;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Element;
-import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.ui.HasWidgets;
@@ -33,9 +31,9 @@ import com.vaadin.client.UIDL;
 import com.vaadin.client.Util;
 
 /**
- * A helper class to implement keyboard shorcut handling. Keeps a list of owners
- * actions and fires actions to server. User class needs to delegate keyboard
- * events to handleKeyboardEvents function.
+ * A helper class to implement keyboard shortcut handling. Keeps a list of
+ * owners actions and fires actions to server. User class needs to delegate
+ * keyboard events to handleKeyboardEvents function.
  *
  * @author Vaadin Ltd
  */
@@ -53,7 +51,7 @@ public class ShortcutActionHandler {
 
         /**
          * Returns the ShortCutActionHandler currently used or null if there is
-         * currently no shortcutactionhandler
+         * currently no shortcutactionhandler.
          */
         ShortcutActionHandler getShortcutActionHandler();
     }
@@ -82,9 +80,8 @@ public class ShortcutActionHandler {
      */
     public void updateActionMap(UIDL c) {
         actions.clear();
-        final Iterator<?> it = c.getChildIterator();
-        while (it.hasNext()) {
-            final UIDL action = (UIDL) it.next();
+        for (final Object child : c) {
+            final UIDL action = (UIDL) child;
 
             int[] modifiers = null;
             if (action.hasAttribute("mk")) {
@@ -101,17 +98,15 @@ public class ShortcutActionHandler {
 
     public void handleKeyboardEvent(final Event event,
             ComponentConnector target) {
-        final int modifiers = KeyboardListenerCollection
-                .getKeyboardModifiers(event);
         final char keyCode = (char) DOM.eventGetKeyCode(event);
         if (keyCode == 0) {
             return;
         }
+        final int modifiers = KeyboardListenerCollection
+                .getKeyboardModifiers(event);
         final ShortcutKeyCombination kc = new ShortcutKeyCombination(keyCode,
                 modifiers);
-        final Iterator<ShortcutAction> it = actions.iterator();
-        while (it.hasNext()) {
-            final ShortcutAction a = it.next();
+        for (final ShortcutAction a : actions) {
             if (a.getShortcutCombination().equals(kc)) {
                 fireAction(event, a, target);
                 break;
@@ -131,37 +126,70 @@ public class ShortcutActionHandler {
             target = Util.findPaintable(client, et);
         }
         final ComponentConnector finalTarget = target;
-
         event.preventDefault();
-
         /*
          * The focused component might have unpublished changes, try to
          * synchronize them before firing shortcut action.
          */
         client.flushActiveConnector();
-
-        Scheduler.get().scheduleDeferred(new Command() {
-            @Override
-            public void execute() {
-                if (finalTarget != null) {
-                    client.updateVariable(paintableId, "actiontarget",
-                            finalTarget, false);
+        /*
+         * Legacy components don't have built-in logic for flushing, they need a
+         * workaround with blur and focus to trigger the value change.
+         */
+        ComponentConnector activeConnector = getActiveConnector(client);
+        if (activeConnector != null) {
+            Class<?> clz = activeConnector.getClass();
+            while (clz != null) {
+                if (clz.getName().equals(
+                        "com.vaadin.v7.client.ui.AbstractLegacyComponentConnector")) {
+                    shakeTarget(et);
+                    Scheduler.get().scheduleDeferred(() -> {
+                        shakeTarget(et);
+                    });
+                    break;
                 }
-                client.updateVariable(paintableId, "action", a.getKey(), true);
+                clz = clz.getSuperclass();
             }
+        }
+        Scheduler.get().scheduleDeferred(() -> {
+            if (finalTarget != null) {
+                client.updateVariable(paintableId, "actiontarget", finalTarget,
+                        false);
+            }
+            client.updateVariable(paintableId, "action", a.getKey(), true);
         });
     }
 
+    /**
+     * We try to fire value change in the component the key combination was
+     * typed. E.g. TextField may contain newly typed text that is expected to be
+     * sent to server before the shortcut action is triggered. This is done by
+     * removing focus and then returning it immediately back to target element.
+     * <p>
+     * This is a hack copied over from V7 in order to keep the compatibility
+     * classes working. Main V8 classes don't require shaking.
+     */
+    private static void shakeTarget(final Element e) {
+        blur(e);
+        focus(e);
+    }
+
+    private static native ComponentConnector getActiveConnector(
+            ApplicationConnection ac)
+    /*-{
+        return ac.@com.vaadin.client.ApplicationConnection::getActiveConnector()();
+    }-*/;
+
     private static native void blur(Element e)
     /*-{
-        if(e.blur) {
+        if (e.blur) {
             e.blur();
        }
     }-*/;
 
     private static native void focus(Element e)
     /*-{
-        if(e.blur) {
+        if (e.blur) {
             e.focus();
        }
     }-*/;
@@ -191,8 +219,8 @@ class ShortcutKeyCombination {
 
         modifiersMask = 0;
         if (modifiers != null) {
-            for (int i = 0; i < modifiers.length; i++) {
-                switch (modifiers[i]) {
+            for (int modifier : modifiers) {
+                switch (modifier) {
                 case ALT:
                     modifiersMask = modifiersMask
                             | KeyboardListener.MODIFIER_ALT;

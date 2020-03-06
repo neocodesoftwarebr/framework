@@ -1,8 +1,9 @@
 package com.vaadin.data;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Collections;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -65,17 +66,13 @@ public class BinderComponentTest
 
     private <T> void testFieldNullRepresentation(T initialValue,
             HasValue<T> field) {
-        binder.bind(field, t -> null, (str, val) -> {
-            Assert.assertEquals("Value update with initial value failed.",
-                    initialValue, field.getValue());
-        });
+        binder.bind(field, t -> null, (str, val) -> {});
         field.setValue(initialValue);
-        Assert.assertEquals("Initial value of field unexpected", initialValue,
+        assertEquals("Initial value of field unexpected", initialValue,
                 field.getValue());
         binder.setBean(item);
-        Assert.assertEquals("Null representation for field failed",
+        assertEquals("Null representation for field failed",
                 field.getEmptyValue(), field.getValue());
-        field.setValue(initialValue);
     }
 
 }

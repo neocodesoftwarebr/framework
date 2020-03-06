@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -225,7 +225,7 @@ public class VFlash extends HTML {
         }
 
         // End object tag
-        html.append(">");
+        html.append('>');
 
         // Ensure we have an movie parameter
         if (embedParams.get("movie") == null) {
@@ -263,7 +263,7 @@ public class VFlash extends HTML {
         // Add the parameters to the Embed
         for (String name : embedParams.keySet()) {
             html.append(WidgetUtil.escapeAttribute(name));
-            html.append("=");
+            html.append('=');
             html.append("\"" + WidgetUtil.escapeAttribute(embedParams.get(name))
                     + "\"");
         }

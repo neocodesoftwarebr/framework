@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -19,6 +19,7 @@ package com.vaadin.client.ui;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.gwt.dom.client.DivElement;
@@ -52,7 +53,7 @@ public class VGridLayout extends ComplexPanel {
     public ApplicationConnection client;
 
     /** For internal use only. May be removed or replaced in the future. */
-    public HashMap<Widget, Cell> widgetToCell = new HashMap<>();
+    public Map<Widget, Cell> widgetToCell = new HashMap<>();
 
     /** For internal use only. May be removed or replaced in the future. */
     public int[] columnWidths;
@@ -112,7 +113,7 @@ public class VGridLayout extends ComplexPanel {
     }
 
     /**
-     * Returns the column widths measured in pixels
+     * Returns the column widths measured in pixels.
      *
      * @return
      */
@@ -121,7 +122,7 @@ public class VGridLayout extends ComplexPanel {
     }
 
     /**
-     * Returns the row heights measured in pixels
+     * Returns the row heights measured in pixels.
      *
      * @return
      */
@@ -130,7 +131,7 @@ public class VGridLayout extends ComplexPanel {
     }
 
     /**
-     * Returns the spacing between the cells horizontally in pixels
+     * Returns the spacing between the cells horizontally in pixels.
      *
      * @return
      */
@@ -139,7 +140,7 @@ public class VGridLayout extends ComplexPanel {
     }
 
     /**
-     * Returns the spacing between the cells vertically in pixels
+     * Returns the spacing between the cells vertically in pixels.
      *
      * @return
      */
@@ -227,11 +228,19 @@ public class VGridLayout extends ComplexPanel {
     }
 
     private int calcRowUsedSpace() {
-        int usedSpace = minRowHeights[0];
+        int usedSpace = 0;
         int verticalSpacing = getVerticalSpacing();
-        for (int i = 1; i < minRowHeights.length; i++) {
+        boolean visibleFound = false;
+        for (int i = 0; i < minRowHeights.length; i++) {
             if (minRowHeights[i] > 0 || !hiddenEmptyRow(i)) {
-                usedSpace += verticalSpacing + minRowHeights[i];
+                if (visibleFound) {
+                    // only include spacing if there already is a visible row
+                    // before this one
+                    usedSpace += verticalSpacing + minRowHeights[i];
+                } else {
+                    usedSpace += minRowHeights[i];
+                    visibleFound = true;
+                }
             }
         }
         return usedSpace;
@@ -288,11 +297,19 @@ public class VGridLayout extends ComplexPanel {
      * Calculates column used space
      */
     private int calcColumnUsedSpace() {
-        int usedSpace = minColumnWidths[0];
+        int usedSpace = 0;
         int horizontalSpacing = getHorizontalSpacing();
-        for (int i = 1; i < minColumnWidths.length; i++) {
+        boolean visibleFound = false;
+        for (int i = 0; i < minColumnWidths.length; i++) {
             if (minColumnWidths[i] > 0 || !hiddenEmptyColumn(i)) {
-                usedSpace += horizontalSpacing + minColumnWidths[i];
+                if (visibleFound) {
+                    // only include spacing if there already is a visible column
+                    // before this one
+                    usedSpace += horizontalSpacing + minColumnWidths[i];
+                } else {
+                    usedSpace += minColumnWidths[i];
+                    visibleFound = true;
+                }
             }
         }
         return usedSpace;
@@ -362,9 +379,10 @@ public class VGridLayout extends ComplexPanel {
 
         int y = paddingTop;
         for (int column = 0; column < cells.length; column++) {
-            y = paddingTop + 1 - 1; // Ensure IE10 does not optimize this out by
-                                    // adding something to evaluate on the RHS
-                                    // #11303
+            // Ensure IE10 does not optimize this out by
+            // adding something to evaluate on the RHS
+            // #11303
+            y = paddingTop + 1 - 1;
 
             for (int row = 0; row < cells[column].length; row++) {
                 Cell cell = cells[column][row];

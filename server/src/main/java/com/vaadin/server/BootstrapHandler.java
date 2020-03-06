@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,6 +15,8 @@
  */
 
 package com.vaadin.server;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -53,6 +55,7 @@ import com.vaadin.shared.communication.PushMode;
 import com.vaadin.ui.Dependency;
 import com.vaadin.ui.Dependency.Type;
 import com.vaadin.ui.UI;
+import com.vaadin.util.ReflectTools;
 
 import elemental.json.Json;
 import elemental.json.JsonException;
@@ -262,7 +265,7 @@ public abstract class BootstrapHandler extends SynchronizedRequestHandler {
 
     /**
      * The URI resolver used in the bootstrap process.
-     * 
+     *
      * @since 8.1
      */
     protected static class BootstrapUriResolver extends VaadinUriResolver {
@@ -322,7 +325,7 @@ public abstract class BootstrapHandler extends SynchronizedRequestHandler {
         protected String encodeQueryStringParameterValue(String queryString) {
             String encodedString = null;
             try {
-                encodedString = URLEncoder.encode(queryString, "UTF-8");
+                encodedString = URLEncoder.encode(queryString, UTF_8.name());
             } catch (UnsupportedEncodingException e) {
                 // should never happen
                 throw new RuntimeException("Could not find UTF-8", e);
@@ -494,7 +497,7 @@ public abstract class BootstrapHandler extends SynchronizedRequestHandler {
         response.setContentType(
                 ApplicationConstants.CONTENT_TYPE_TEXT_HTML_UTF_8);
         try (BufferedWriter writer = new BufferedWriter(
-                new OutputStreamWriter(response.getOutputStream(), "UTF-8"))) {
+                new OutputStreamWriter(response.getOutputStream(), UTF_8))) {
             writer.append(html);
         }
     }
@@ -515,11 +518,9 @@ public abstract class BootstrapHandler extends SynchronizedRequestHandler {
         head.appendElement("meta").attr("http-equiv", "Content-Type").attr(
                 "content", ApplicationConstants.CONTENT_TYPE_TEXT_HTML_UTF_8);
 
-        /*
-         * Enable Chrome Frame in all versions of IE if installed.
-         */
+        // Force IE 11 to use IE 11 mode.
         head.appendElement("meta").attr("http-equiv", "X-UA-Compatible")
-                .attr("content", "IE=11;chrome=1");
+                .attr("content", "IE=11");
 
         Class<? extends UI> uiClass = context.getUIClass();
 
@@ -541,7 +542,8 @@ public abstract class BootstrapHandler extends SynchronizedRequestHandler {
             Class<? extends ViewportGenerator> viewportGeneratorClass = viewportGeneratorClassAnnotation
                     .value();
             try {
-                viewportContent = viewportGeneratorClass.newInstance()
+                viewportContent = ReflectTools
+                        .createInstance(viewportGeneratorClass)
                         .getViewport(context.getRequest());
             } catch (Exception e) {
                 throw new RuntimeException(
@@ -577,10 +579,10 @@ public abstract class BootstrapHandler extends SynchronizedRequestHandler {
                     .attr("href", themeUri + "/favicon.ico");
         }
 
-        Collection<? extends Dependency> deps = Dependency
-                .findAndFilterDependencies(Collections.singletonList(uiClass),
-                        context.getSession().getCommunicationManager(),
-                        new FilterContext(context.getSession()));
+        Collection<? extends Dependency> deps = Dependency.findDependencies(
+                Collections.singletonList(uiClass),
+                context.getSession().getCommunicationManager(),
+                new FilterContext(context.getSession()));
         for (Dependency dependency : deps) {
             Type type = dependency.getType();
             String url = context.getUriResolver()
@@ -658,9 +660,9 @@ public abstract class BootstrapHandler extends SynchronizedRequestHandler {
         mainDiv.attr("id", context.getAppId());
         mainDiv.addClass("v-app");
         mainDiv.addClass(context.getThemeName());
-        mainDiv.addClass(context.getUIClass().getSimpleName()
-                .toLowerCase(Locale.ENGLISH));
-        if (style != null && style.length() != 0) {
+        mainDiv.addClass(
+                context.getUIClass().getSimpleName().toLowerCase(Locale.ROOT));
+        if (style != null && !style.isEmpty()) {
             mainDiv.attr("style", style);
         }
         mainDiv.appendElement("div").addClass("v-app-loading");
@@ -892,7 +894,7 @@ public abstract class BootstrapHandler extends SynchronizedRequestHandler {
     }
 
     /**
-     * Override if required
+     * Override if required.
      *
      * @param context
      * @return

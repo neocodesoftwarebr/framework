@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -45,7 +45,8 @@ import com.vaadin.v7.data.Validator;
  * @author Petri Hakala
  * @author Henri Sara
  *
- * @deprecated See {@link BeanValidationBinder} and {@link com.vaadin.data.validator.BeanValidator}
+ * @deprecated See {@link BeanValidationBinder} and
+ *             {@link com.vaadin.data.validator.BeanValidator}
  */
 @Deprecated
 public class BeanValidator implements Validator {
@@ -117,7 +118,7 @@ public class BeanValidator implements Validator {
     public void validate(final Object value) throws InvalidValueException {
         Set<?> violations = getJavaxBeanValidator().validateValue(beanClass,
                 propertyName, value);
-        if (violations.size() > 0) {
+        if (!violations.isEmpty()) {
             InvalidValueException[] causes = new InvalidValueException[violations
                     .size()];
             int i = 0;

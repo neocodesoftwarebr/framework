@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 package com.vaadin.client.ui.dd;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import com.google.gwt.dom.client.Document;
@@ -55,7 +56,7 @@ public class VDragEvent {
 
     private int id;
 
-    private HashMap<String, Object> dropDetails = new HashMap<>();
+    private Map<String, Object> dropDetails = new HashMap<>();
 
     private Element elementOver;
 
@@ -171,7 +172,9 @@ public class VDragEvent {
     }
 
     /**
-     * TODO consider using similar smaller (than map) api as in Transferable
+     * Returns the details of the drag and drop operation.
+     *
+     * TODO consider using similar smaller (than map) API as in Transferable
      *
      * TODO clean up when drop handler changes
      *
@@ -255,7 +258,7 @@ public class VDragEvent {
 
         syncContent(element, cloneNode);
         if (BrowserInfo.get().isIE()) {
-            if (cloneNode.getTagName().toLowerCase().equals("tr")) {
+            if (cloneNode.getTagName().toLowerCase(Locale.ROOT).equals("tr")) {
                 TableElement table = Document.get().createTableElement();
                 TableSectionElement tbody = Document.get().createTBodyElement();
                 table.appendChild(tbody);

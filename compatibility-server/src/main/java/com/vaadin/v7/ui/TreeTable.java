@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -39,7 +39,6 @@ import com.vaadin.ui.declarative.DesignException;
 import com.vaadin.v7.data.Collapsible;
 import com.vaadin.v7.data.Container;
 import com.vaadin.v7.data.Container.Hierarchical;
-import com.vaadin.v7.data.Container.ItemSetChangeEvent;
 import com.vaadin.v7.data.util.ContainerHierarchicalWrapper;
 import com.vaadin.v7.data.util.HierarchicalContainer;
 import com.vaadin.v7.data.util.HierarchicalContainerOrderedWrapper;
@@ -67,7 +66,7 @@ import com.vaadin.v7.ui.Tree.ExpandListener;
  * {@link Collapsible} containers can not be shared among several users as they
  * share UI state in the container.
  *
- * @deprecated As of 8.0. New hierarchical components are planned in an upcoming version of Vaadin Framework 8.
+ * @deprecated See {@code TreeGrid}.
  */
 @SuppressWarnings({ "serial" })
 @Deprecated
@@ -227,7 +226,7 @@ public class TreeTable extends Table implements Hierarchical {
 
         @Override
         public Object lastItemId() {
-            if (getPreOrder().size() > 0) {
+            if (!getPreOrder().isEmpty()) {
                 return getPreOrder().get(getPreOrder().size() - 1);
             } else {
                 return null;
@@ -784,7 +783,7 @@ public class TreeTable extends Table implements Hierarchical {
     /**
      * @deprecated As of 7.0, replaced by
      *             {@link #addExpandListener(ExpandListener)}
-     **/
+     */
     @Deprecated
     public void addListener(ExpandListener listener) {
         addExpandListener(listener);
@@ -804,7 +803,7 @@ public class TreeTable extends Table implements Hierarchical {
     /**
      * @deprecated As of 7.0, replaced by
      *             {@link #removeExpandListener(ExpandListener)}
-     **/
+     */
     @Deprecated
     public void removeListener(ExpandListener listener) {
         removeExpandListener(listener);
@@ -834,7 +833,7 @@ public class TreeTable extends Table implements Hierarchical {
     /**
      * @deprecated As of 7.0, replaced by
      *             {@link #addCollapseListener(CollapseListener)}
-     **/
+     */
     @Deprecated
     public void addListener(CollapseListener listener) {
         addCollapseListener(listener);
@@ -854,7 +853,7 @@ public class TreeTable extends Table implements Hierarchical {
     /**
      * @deprecated As of 7.0, replaced by
      *             {@link #removeCollapseListener(CollapseListener)}
-     **/
+     */
     @Deprecated
     public void removeListener(CollapseListener listener) {
         removeCollapseListener(listener);

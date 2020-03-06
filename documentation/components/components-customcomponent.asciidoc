@@ -13,7 +13,7 @@ composite components. In many applications, such composite components make up
 the majority of the user interface.
 
 As described earlier in
-<<dummy/../../../framework/application/application-architecture#application.architecture.composition,"Compositing
+<<../application/application-architecture#application.architecture.composition,"Compositing
 Components">>, you have two basic ways to create a composite - either by
 extending a layout component or by using a composition component (a
 [classname]#Composite# or a [classname]#CustomComponent#), which typically
@@ -21,8 +21,6 @@ wraps around a layout component.
 The benefit of wrapping a layout composite is mainly encapsulation - hiding the
 implementation details of the composition. Otherwise, a user of the composite
 could rely on implementation details, which would create an unwanted dependency.
-
-IMPORTANT: The [classname]#Composite# component is currently being developed and only available in the Framework 8.1 prerelease versions, starting from 8.1.0.alpha6.
 
 To create a composite, you need to inherit [classname]#Composite# or
 [classname]#CustomComponent# and set the __composition root__ component in the
@@ -89,5 +87,5 @@ composition.
 Even further, you can create entirely new low-level components, by integrating
 pure client-side components or by extending the client-side functionality of
 built-in components. Development of new components is covered in
-<<dummy/../../../framework/gwt/gwt-overview.asciidoc#gwt.overview,"Integrating
+<<../gwt/gwt-overview.asciidoc#gwt.overview,"Integrating
 with the Server-Side">>.

@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import com.vaadin.data.provider.AbstractHierarchicalDataProvider;
+import com.vaadin.data.provider.AbstractBackEndHierarchicalDataProvider;
 import com.vaadin.data.provider.HierarchicalQuery;
 import com.vaadin.tests.data.bean.HierarchicalTestBean;
 
-public class LazyHierarchicalDataProvider
-        extends AbstractHierarchicalDataProvider<HierarchicalTestBean, Void> {
+public class LazyHierarchicalDataProvider extends
+        AbstractBackEndHierarchicalDataProvider<HierarchicalTestBean, Void> {
 
     private final int nodesPerLevel;
     private final int depth;
@@ -32,22 +32,6 @@ public class LazyHierarchicalDataProvider
     }
 
     @Override
-    public Stream<HierarchicalTestBean> fetchChildren(
-            HierarchicalQuery<HierarchicalTestBean, Void> query) {
-        final int depth = query.getParentOptional().isPresent()
-                ? query.getParent().getDepth() + 1 : 0;
-        final Optional<String> parentKey = query.getParentOptional()
-                .flatMap(parent -> Optional.of(parent.getId()));
-
-        List<HierarchicalTestBean> list = new ArrayList<>();
-        for (int i = 0; i < query.getLimit(); i++) {
-            list.add(new HierarchicalTestBean(parentKey.orElse(null), depth,
-                    i + query.getOffset()));
-        }
-        return list.stream();
-    }
-
-    @Override
     public boolean hasChildren(HierarchicalTestBean item) {
         return internalHasChildren(item);
     }
@@ -57,7 +41,20 @@ public class LazyHierarchicalDataProvider
     }
 
     @Override
-    public boolean isInMemory() {
-        return false;
+    protected Stream<HierarchicalTestBean> fetchChildrenFromBackEnd(
+            HierarchicalQuery<HierarchicalTestBean, Void> query) {
+        final int depth = query.getParentOptional().isPresent()
+                ? query.getParent().getDepth() + 1
+                : 0;
+        final Optional<String> parentKey = query.getParentOptional()
+                .flatMap(parent -> Optional.of(parent.getId()));
+
+        List<HierarchicalTestBean> list = new ArrayList<>();
+        int limit = Math.min(query.getLimit(), nodesPerLevel);
+        for (int i = 0; i < limit; i++) {
+            list.add(new HierarchicalTestBean(parentKey.orElse(null), depth,
+                    i + query.getOffset()));
+        }
+        return list.stream();
     }
 }

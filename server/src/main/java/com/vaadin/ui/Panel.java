@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -53,9 +53,8 @@ public class Panel extends AbstractSingleComponentContainer
      */
     protected ActionManager actionManager;
 
-    private PanelServerRpc rpc = (MouseEventDetails mouseDetails) -> {
-        fireEvent(new ClickEvent(Panel.this, mouseDetails));
-    };
+    private PanelServerRpc rpc = (MouseEventDetails mouseDetails) -> fireEvent(
+            new ClickEvent(Panel.this, mouseDetails));
 
     /**
      * Creates a new empty panel.
@@ -243,7 +242,7 @@ public class Panel extends AbstractSingleComponentContainer
     }
 
     /**
-     * Removes all action handlers
+     * Removes all action handlers.
      */
     public void removeAllActionHandlers() {
         if (actionManager != null) {

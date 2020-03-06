@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -345,7 +345,7 @@ public class LoginForm extends AbstractSingleComponentContainer {
      * URL in the method or the password manager will not be triggered.
      */
     private void login() {
-        HashMap<String, String> params = new HashMap<>();
+        Map<String, String> params = new HashMap<>();
         params.put("username", getUsernameField().getValue());
         params.put("password", getPasswordField().getValue());
         LoginEvent event = new LoginEvent(LoginForm.this, params);

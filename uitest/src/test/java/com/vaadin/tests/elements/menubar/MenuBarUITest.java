@@ -1,22 +1,4 @@
-/*
- * Copyright 2000-2014 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.tests.elements.menubar;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
@@ -29,7 +11,16 @@ import org.openqa.selenium.WebElement;
 import com.vaadin.testbench.elements.MenuBarElement;
 import com.vaadin.tests.tb3.MultiBrowserTest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class MenuBarUITest extends MultiBrowserTest {
+
+    @Override
+    protected boolean requireWindowFocusForIE() {
+        return true;
+    }
 
     @Before
     public void init() {
@@ -67,6 +58,7 @@ public class MenuBarUITest extends MultiBrowserTest {
         // The Edit menu will be opened by moving the mouse over the item (done
         // by clickItem). The first click then actually closes the menu.
         menuBar.clickItem("Edit");
+        sleep(100);
         menuBar.clickItem("Edit");
         assertFalse(isItemVisible("Save As.."));
         assertTrue(isItemVisible("Paste"));
@@ -119,6 +111,22 @@ public class MenuBarUITest extends MultiBrowserTest {
         menuBar = $(MenuBarElement.class).first();
         menuBar.clickItem("File");
         assertTrue(isItemVisible("Open"));
+    }
+
+    @Test
+    public void testMenuItemTooltips() {
+        MenuBarElement first = $(MenuBarElement.class).first();
+        first.clickItem("File");
+        assertTooltip("Open", "<b>Preformatted</b>\ndescription");
+        assertTooltip("Save", "plain description, <b>HTML</b> is visible");
+        assertTooltip("Exit", "HTML\ndescription");
+    }
+
+    private void assertTooltip(String menuItem, String expectedTooltipText) {
+        testBenchElement(getMenuElement(menuItem)).showTooltip();
+        assertEquals("Unexpected tooltip when hovering '" + menuItem + "'",
+                expectedTooltipText,
+                findElement(By.className("v-tooltip-text")).getText());
     }
 
     private boolean isItemVisible(String item) {

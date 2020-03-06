@@ -1,23 +1,4 @@
-/*
- * Copyright 2000-2016 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.tests.components.datefield;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +14,10 @@ import com.vaadin.testbench.elements.ButtonElement;
 import com.vaadin.testbench.elements.DateFieldElement;
 import com.vaadin.testbench.parallel.BrowserUtil;
 import com.vaadin.tests.tb3.MultiBrowserTest;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests contents and functionality of PopupDateField's popup.
@@ -338,9 +323,7 @@ public class PopupDateFieldExtendedRangeTest extends MultiBrowserTest {
         // navigate to previous month
         WebElement popupBody = popup
                 .findElement(By.className("v-datefield-calendarpanel"));
-        new Actions(driver).keyDown(Keys.SHIFT).perform();
-        popupBody.sendKeys(Keys.ARROW_LEFT);
-        new Actions(driver).keyUp(Keys.SHIFT).perform();
+        popupBody.sendKeys(Keys.SHIFT, Keys.ARROW_LEFT);
 
         // TODO: remove this once #14406 has been fixed
         if (BrowserUtil.isIE(getDesiredCapabilities())
@@ -383,9 +366,7 @@ public class PopupDateFieldExtendedRangeTest extends MultiBrowserTest {
         assertEquals("unexpected day content", "7", days.get(41).getText());
 
         // navigate to previous year
-        new Actions(driver).keyDown(Keys.SHIFT).perform();
-        popupBody.sendKeys(Keys.ARROW_DOWN);
-        new Actions(driver).keyUp(Keys.SHIFT).perform();
+        new Actions(driver).sendKeys(Keys.chord(Keys.SHIFT, Keys.ARROW_DOWN));
 
         // TODO: remove this once #14406 has been fixed
         popup.findElement(By.className("v-datefield-calendarpanel-prevyear"))

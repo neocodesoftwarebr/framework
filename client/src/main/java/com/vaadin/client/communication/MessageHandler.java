@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -31,7 +31,6 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsArrayString;
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.Widget;
@@ -144,7 +143,7 @@ public class MessageHandler {
     private int sessionExpirationInterval;
 
     /**
-     * Holds the time spent rendering the last request
+     * Holds the time spent rendering the last request.
      */
     protected int lastProcessingTime;
 
@@ -194,6 +193,7 @@ public class MessageHandler {
     private int lastSeenServerSyncId = UNDEFINED_SYNC_ID;
 
     private ApplicationConnection connection;
+    private boolean resyncInProgress;
 
     /**
      * Data structure holding information about pending UIDL messages.
@@ -229,7 +229,7 @@ public class MessageHandler {
      * Handles a received UIDL JSON text, parsing it, and passing it on to the
      * appropriate handlers, while logging timing information.
      *
-     * @param jsonText
+     * @param json
      *            The JSON to handle
      */
     public void handleMessage(final ValueMap json) {
@@ -248,12 +248,7 @@ public class MessageHandler {
                 .getApplicationState() == ApplicationState.INITIALIZING) {
             // Application is starting up for the first time
             connection.setApplicationRunning(true);
-            connection.executeWhenCSSLoaded(new Command() {
-                @Override
-                public void execute() {
-                    handleJSON(json);
-                }
-            });
+            connection.executeWhenCSSLoaded(() -> handleJSON(json));
         } else {
             getLogger().warning(
                     "Ignored received message because application has already been stopped");
@@ -264,7 +259,17 @@ public class MessageHandler {
     protected void handleJSON(final ValueMap json) {
         final int serverId = getServerId(json);
 
-        if (isResynchronize(json) && !isNextExpectedMessage(serverId)) {
+        boolean hasResynchronize = isResynchronize(json);
+
+        if (!hasResynchronize && resyncInProgress) {
+            Logger.getLogger(MessageHandler.class.getName())
+                .warning("Dropping the response of a request before a resync request.");
+            return;
+        }
+
+        resyncInProgress = false;
+
+        if (hasResynchronize && !isNextExpectedMessage(serverId)) {
             // Resynchronize request. We must remove any old pending
             // messages and ensure this is handled next. Otherwise we
             // would keep waiting for an older message forever (if this
@@ -327,7 +332,7 @@ public class MessageHandler {
             int serverNextExpected = json
                     .getInt(ApplicationConstants.CLIENT_TO_SERVER_ID);
             getMessageSender().setClientToServerMessageId(serverNextExpected,
-                    isResynchronize(json));
+                    hasResynchronize);
         }
 
         if (serverId != -1) {
@@ -574,12 +579,9 @@ public class MessageHandler {
                 ConnectorBundleLoader.get().ensureDeferredBundleLoaded();
 
                 if (Profiler.isEnabled()) {
-                    Scheduler.get().scheduleDeferred(new ScheduledCommand() {
-                        @Override
-                        public void execute() {
-                            Profiler.logTimings();
-                            Profiler.reset();
-                        }
+                    Scheduler.get().scheduleDeferred(() -> {
+                        Profiler.logTimings();
+                        Profiler.reset();
                     });
                 }
             }
@@ -936,13 +938,13 @@ public class MessageHandler {
                                 Profiler.leave(key);
                             }
                         } else if (legacyConnector == null) {
-                            getLogger().severe(
-                                    "Received update for " + uidl.getTag()
-                                            + ", but there is no such paintable ("
-                                            + connectorId + ") rendered.");
+                            getLogger().severe("Received update for "
+                                    + uidl.getTag()
+                                    + ", but there is no such paintable ("
+                                    + connectorId + ") rendered.");
                         } else {
-                            getLogger()
-                                    .severe("Server sent Vaadin 6 style updates for "
+                            getLogger().severe(
+                                    "Server sent Vaadin 6 style updates for "
                                             + Util.getConnectorString(
                                                     legacyConnector)
                                             + " but this is not a Vaadin 6 Paintable");
@@ -1613,7 +1615,7 @@ public class MessageHandler {
         }
     }
 
-    private static native final int calculateBootstrapTime()
+    private static final native int calculateBootstrapTime()
     /*-{
         if ($wnd.performance && $wnd.performance.timing) {
             return (new Date).getTime() - $wnd.performance.timing.responseStart;
@@ -1723,7 +1725,7 @@ public class MessageHandler {
     }
 
     /**
-     * Checks if the first UIDL has been handled
+     * Checks if the first UIDL has been handled.
      *
      * @return true if the initial UIDL has already been processed, false
      *         otherwise
@@ -1777,7 +1779,7 @@ public class MessageHandler {
     }
 
     /**
-     * Unwraps and parses the given JSON, originating from the server
+     * Unwraps and parses the given JSON, originating from the server.
      *
      * @param jsonText
      *            the json from the server
@@ -1811,7 +1813,7 @@ public class MessageHandler {
     }-*/;
 
     /**
-     * Parse the given wrapped JSON, received from the server, to a ValueMap
+     * Parse the given wrapped JSON, received from the server, to a ValueMap.
      *
      * @param wrappedJsonText
      *            the json, wrapped as done by the server
@@ -1831,4 +1833,7 @@ public class MessageHandler {
         }
     }-*/;
 
+    public void onResynchronize() {
+        resyncInProgress = true;
+    }
 }

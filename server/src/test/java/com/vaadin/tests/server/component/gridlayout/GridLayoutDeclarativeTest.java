@@ -1,19 +1,6 @@
-/*
- * Copyright 2000-2016 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.tests.server.component.gridlayout;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -237,7 +224,7 @@ public class GridLayoutDeclarativeTest
                     continue;
                 }
 
-                Assert.assertEquals(expected.getComponentAlignment(eC),
+                assertEquals(expected.getComponentAlignment(eC),
                         result.getComponentAlignment(rC));
 
             }
@@ -295,7 +282,7 @@ public class GridLayoutDeclarativeTest
         Component component = Design.read(input);
         GridLayout readLayout = (GridLayout) component;
 
-        Assert.assertEquals(layout.getRows(), readLayout.getRows());
+        assertEquals(layout.getRows(), readLayout.getRows());
     }
 
     @Test
@@ -330,16 +317,16 @@ public class GridLayoutDeclarativeTest
                 + "<row><column><vaadin-grid-layout _id=\"marginBottomComponent\" margin-bottom></vaadin-grid-layout></column></row>"
                 + "</vaadin-grid-layout>";
         DesignContext context = Design
-                .read(new ByteArrayInputStream(design.getBytes("UTF-8")), null);
-        Assert.assertEquals(null, context.getCustomAttributes(
+                .read(new ByteArrayInputStream(design.getBytes(UTF_8)), null);
+        assertEquals(null, context.getCustomAttributes(
                 context.getComponentByLocalId("marginComponent")));
-        Assert.assertEquals(null, context.getCustomAttributes(
+        assertEquals(null, context.getCustomAttributes(
                 context.getComponentByLocalId("marginLeftComponent")));
-        Assert.assertEquals(null, context.getCustomAttributes(
+        assertEquals(null, context.getCustomAttributes(
                 context.getComponentByLocalId("marginRightComponent")));
-        Assert.assertEquals(null, context.getCustomAttributes(
+        assertEquals(null, context.getCustomAttributes(
                 context.getComponentByLocalId("marginTopComponent")));
-        Assert.assertEquals(null, context.getCustomAttributes(
+        assertEquals(null, context.getCustomAttributes(
                 context.getComponentByLocalId("marginBottomComponent")));
     }
 
@@ -352,9 +339,9 @@ public class GridLayoutDeclarativeTest
                 + "<my-preconfigured-grid-layout></my-preconfigured-grid-layout>";
 
         PreconfiguredGridLayout myLayout = (PreconfiguredGridLayout) Design
-                .read(new ByteArrayInputStream(design.getBytes("UTF-8")));
-        Assert.assertEquals(2, myLayout.getRows());
-        Assert.assertEquals(2, myLayout.getColumns());
+                .read(new ByteArrayInputStream(design.getBytes(UTF_8)));
+        assertEquals(2, myLayout.getRows());
+        assertEquals(2, myLayout.getColumns());
     }
 
 }

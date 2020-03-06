@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -33,14 +33,14 @@ import com.vaadin.event.dd.DropTarget;
 import com.vaadin.event.dd.TargetDetails;
 import com.vaadin.event.dd.TargetDetailsImpl;
 import com.vaadin.event.dd.acceptcriteria.AcceptCriterion;
-import com.vaadin.event.dnd.DragSourceExtension;
-import com.vaadin.event.dnd.DropTargetExtension;
 import com.vaadin.shared.ApplicationConstants;
 import com.vaadin.shared.Registration;
 import com.vaadin.shared.communication.SharedState;
 import com.vaadin.shared.ui.dd.DragEventType;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.UI;
+import com.vaadin.ui.dnd.DragSourceExtension;
+import com.vaadin.ui.dnd.DropTargetExtension;
 
 import elemental.json.JsonObject;
 
@@ -215,7 +215,7 @@ public class DragAndDropService implements VariableOwner, ClientConnector {
         variables = (Map<String, Object>) variables.get("tra");
 
         Transferable transferable = null;
-        if (sourceComponent != null && sourceComponent instanceof DragSource) {
+        if (sourceComponent instanceof DragSource) {
             transferable = ((DragSource) sourceComponent)
                     .getTransferable(variables);
         }

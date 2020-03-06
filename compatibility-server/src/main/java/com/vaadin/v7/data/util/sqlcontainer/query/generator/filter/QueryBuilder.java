@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -45,7 +45,7 @@ public class QueryBuilder implements Serializable {
         addFilterTranslator(new SimpleStringTranslator());
     }
 
-    public synchronized static void addFilterTranslator(
+    public static synchronized void addFilterTranslator(
             FilterTranslator translator) {
         filterTranslators.add(translator);
     }
@@ -79,7 +79,7 @@ public class QueryBuilder implements Serializable {
      *            the statement helper to update with the value(s) of the filter
      * @return a string representing the filter.
      */
-    public synchronized static String getWhereStringForFilter(Filter filter,
+    public static synchronized String getWhereStringForFilter(Filter filter,
             StatementHelper sh) {
         for (FilterTranslator ft : filterTranslators) {
             if (ft.translatesFilter(filter)) {
@@ -94,7 +94,7 @@ public class QueryBuilder implements Serializable {
         StringBuilder result = new StringBuilder();
         for (Filter f : filters) {
             result.append(getWhereStringForFilter(f, sh));
-            result.append(" ").append(joinString).append(" ");
+            result.append(' ').append(joinString).append(' ');
         }
         // Remove the last instance of joinString
         result.delete(result.length() - joinString.length() - 2,

@@ -1,25 +1,12 @@
-/*
- * Copyright 2000-2016 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.tests.performance;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -44,7 +31,6 @@ public class MemoryIT extends SingleBrowserTest {
 
         performTest(TreeGridMemory.PATH + "?items=1", "tree-grid-one-item-");
         performTest(TreeTableMemory.PATH + "?items=1", "tree-table-one-item-");
-
 
         performTest(TreeGridMemory.PATH + "?items=100&initiallyExpanded",
                 "tree-grid-100-items-initially-expanded-");
@@ -89,7 +75,7 @@ public class MemoryIT extends SingleBrowserTest {
                 return;
             }
             if (i == MAX_ITERATIONS) {
-                Assert.fail("Memory size does not stabilize");
+                fail("Memory size does not stabilize");
             }
         }
     }
@@ -112,7 +98,7 @@ public class MemoryIT extends SingleBrowserTest {
 
     private void openUI(String path) {
         getDriver().get(StringUtils.strip(getBaseURL(), "/") + path);
-        Assert.assertTrue(isElementPresent(By.className("v-grid"))
+        assertTrue(isElementPresent(By.className("v-grid"))
                 || isElementPresent(By.className("v-treegrid"))
                 || isElementPresent(By.className("v-table")));
     }

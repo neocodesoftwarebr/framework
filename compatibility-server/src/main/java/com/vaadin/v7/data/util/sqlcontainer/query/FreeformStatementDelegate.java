@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -39,8 +39,8 @@ public interface FreeformStatementDelegate extends FreeformQueryDelegate {
      *
      * @param offset
      *            the first record (row) to fetch.
-     * @param pagelength
-     *            the number of records (rows) to fetch. 0 means all records
+     * @param limit
+     *            the limit of records (rows) to fetch. 0 means all records
      *            starting from offset.
      */
     public StatementHelper getQueryStatement(int offset, int limit)

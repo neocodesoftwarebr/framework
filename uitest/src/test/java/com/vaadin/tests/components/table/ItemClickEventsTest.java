@@ -1,31 +1,16 @@
-/*
- * Copyright 2000-2016 Vaadin Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
 package com.vaadin.tests.components.table;
-
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.testbench.TestBenchElement;
-import com.vaadin.testbench.elements.TableElement;
 import com.vaadin.testbench.elements.CheckBoxElement;
 import com.vaadin.testbench.elements.LabelElement;
+import com.vaadin.testbench.elements.TableElement;
 import com.vaadin.tests.tb3.MultiBrowserTest;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class ItemClickEventsTest extends MultiBrowserTest {
 
@@ -36,7 +21,7 @@ public class ItemClickEventsTest extends MultiBrowserTest {
 
     private void clickElement(TestBenchElement e) {
         assertNotNull(e);
-        e.click(5, 5);
+        e.click();
     }
 
     private void doubleClickElement(TestBenchElement e) {
@@ -67,6 +52,7 @@ public class ItemClickEventsTest extends MultiBrowserTest {
         // Select the first item
         clickElement(table.getRow(0));
         assertLog("left click on table/Item 0");
+        sleep(100);
 
         // Do it again
         clickElement(table.getRow(0));
@@ -101,6 +87,7 @@ public class ItemClickEventsTest extends MultiBrowserTest {
 
         // Check log output
         assertLog("left click on table/Item 1");
+        sleep(500);
 
         // Click row 1 again
         clickElement(table.getRow(1));

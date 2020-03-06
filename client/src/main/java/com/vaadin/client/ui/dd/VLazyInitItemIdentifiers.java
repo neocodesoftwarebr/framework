@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,7 +18,7 @@ package com.vaadin.client.ui.dd;
 import java.util.HashSet;
 
 import com.vaadin.client.UIDL;
-import com.vaadin.event.dnd.DropTargetExtension;
+import com.vaadin.ui.dnd.DropTargetExtension;
 
 /**
  *
@@ -47,20 +47,16 @@ public class VLazyInitItemIdentifiers extends VAcceptCriterion {
             }
         } else {
 
-            VDragEventServerCallback acceptCallback = new VDragEventServerCallback() {
-
-                @Override
-                public void handleResponse(boolean accepted, UIDL response) {
-                    hashSet = new HashSet<>();
-                    String[] stringArrayAttribute = response
-                            .getStringArrayAttribute("allowedIds");
-                    for (int i = 0; i < stringArrayAttribute.length; i++) {
-                        hashSet.add(stringArrayAttribute[i]);
-                    }
-                    loaded = true;
-                    if (accepted) {
-                        callback.accepted(drag);
-                    }
+            VDragEventServerCallback acceptCallback = (accepted, response) -> {
+                hashSet = new HashSet<>();
+                String[] stringArrayAttribute = response
+                        .getStringArrayAttribute("allowedIds");
+                for (String attribute : stringArrayAttribute) {
+                    hashSet.add(attribute);
+                }
+                loaded = true;
+                if (accepted) {
+                    callback.accepted(drag);
                 }
             };
 

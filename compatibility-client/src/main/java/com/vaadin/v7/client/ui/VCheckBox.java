@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,7 +16,9 @@
 
 package com.vaadin.v7.client.ui;
 
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.DOM;
@@ -60,9 +62,9 @@ public class VCheckBox extends com.google.gwt.user.client.ui.CheckBox
             el = DOM.getNextSibling(el);
         }
 
-        if (BrowserInfo.get().isWebkit()) {
-            // Webkit does not focus non-text input elements on click
-            // (#11854)
+        if (BrowserInfo.get().isWebkit() || BrowserInfo.get().isFirefox()) {
+            // Webkit and Firefox do not focus non-text input elements on click
+            // (#3944)
             addClickHandler(new ClickHandler() {
                 @Override
                 public void onClick(ClickEvent event) {
@@ -105,5 +107,22 @@ public class VCheckBox extends com.google.gwt.user.client.ui.CheckBox
     @Override
     public void setAriaInvalid(boolean invalid) {
         AriaHelper.handleInputInvalid(getCheckBoxElement(), invalid);
+    }
+
+    @Override
+    protected void onAttach() {
+        super.onAttach();
+
+        if (BrowserInfo.get().isSafari()) {
+            /*
+             * Sometimes Safari does not render checkbox correctly when
+             * attaching. Setting the visibility to hidden and a bit later
+             * restoring will make everything just fine.
+             */
+            getElement().getStyle().setVisibility(Style.Visibility.HIDDEN);
+            Scheduler.get().scheduleFinally(() -> {
+                getElement().getStyle().setVisibility(Style.Visibility.VISIBLE);
+            });
+        }
     }
 }

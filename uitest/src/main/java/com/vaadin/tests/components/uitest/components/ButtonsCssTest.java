@@ -13,6 +13,7 @@ import com.vaadin.v7.ui.themes.ChameleonTheme;
 import com.vaadin.v7.ui.themes.Reindeer;
 import com.vaadin.v7.ui.themes.Runo;
 
+@SuppressWarnings("deprecation")
 public class ButtonsCssTest extends GridLayout {
 
     private TestSampler parent;
@@ -29,7 +30,7 @@ public class ButtonsCssTest extends GridLayout {
         addComponent(b);
 
         b = new Button("Button with icon");
-        b.setIcon(new ThemeResource(parent.ICON_URL));
+        b.setIcon(new ThemeResource(TestSampler.ICON_URL));
         b.setId("button" + debugIdCounter++);
         addComponent(b);
 
@@ -48,14 +49,14 @@ public class ButtonsCssTest extends GridLayout {
         b.setId("button" + debugIdCounter++);
         addComponent(b);
 
-        CheckBox cb = new CheckBox("Checkbox");
-        cb.setId("button" + debugIdCounter++);
-        addComponent(cb);
+        CheckBox cb1 = new CheckBox("Checkbox");
+        cb1.setId("button" + debugIdCounter++);
+        addComponent(cb1);
 
-        cb = new CheckBox("Checkbox with icon");
-        cb.setIcon(new ThemeResource(parent.ICON_URL));
-        cb.setId("button" + debugIdCounter++);
-        addComponent(cb);
+        CheckBox cb2 = new CheckBox("Checkbox with icon");
+        cb2.setIcon(new ThemeResource(TestSampler.ICON_URL));
+        cb2.setId("button" + debugIdCounter++);
+        addComponent(cb2);
 
         Link l = new Link("A link", new ExternalResource(""));
         l.setId("button" + debugIdCounter++);
@@ -69,13 +70,17 @@ public class ButtonsCssTest extends GridLayout {
         createButtonWith("Tall", ChameleonTheme.BUTTON_TALL, null);
         createButtonWith("Borderless", ChameleonTheme.BUTTON_BORDERLESS, null);
         createButtonWith("Icn top", ChameleonTheme.BUTTON_ICON_ON_TOP,
-                parent.ICON_URL);
+                TestSampler.ICON_URL);
         createButtonWith("Icn right", ChameleonTheme.BUTTON_ICON_ON_RIGHT,
-                parent.ICON_URL);
+                TestSampler.ICON_URL);
         createButtonWith("Icon only", ChameleonTheme.BUTTON_ICON_ONLY,
-                parent.ICON_URL);
+                TestSampler.ICON_URL);
         createButtonWith("Down", ChameleonTheme.BUTTON_DOWN, null);
 
+        parent.addReadOnlyChangeListener(event -> {
+            cb1.setReadOnly(!cb1.isReadOnly());
+            cb2.setReadOnly(!cb2.isReadOnly());
+        });
     }
 
     private void createButtonWith(String caption, String primaryStyleName,

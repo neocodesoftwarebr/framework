@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -59,7 +59,7 @@ public class DoubleValidator extends AbstractStringValidator {
 
     @Override
     public void validate(Object value) throws InvalidValueException {
-        if (value != null && value instanceof Double) {
+        if (value instanceof Double) {
             // Allow Doubles to pass through the validator for easier
             // migration. Otherwise a TextField connected to an double property
             // with a DoubleValidator will fail.

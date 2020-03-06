@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -30,8 +30,10 @@ import com.vaadin.client.ApplicationConnection;
 import com.vaadin.client.BrowserInfo;
 import com.vaadin.client.Util;
 import com.vaadin.client.WidgetUtil;
+import com.vaadin.client.WidgetUtil.ErrorUtil;
 
-public class VButton extends FocusWidget implements ClickHandler {
+public class VButton extends FocusWidget
+        implements ClickHandler, HasErrorIndicatorElement {
 
     public static final String CLASSNAME = "v-button";
     private static final String CLASSNAME_PRESSED = "v-pressed";
@@ -48,7 +50,7 @@ public class VButton extends FocusWidget implements ClickHandler {
     public final Element wrapper = DOM.createSpan();
 
     /** For internal use only. May be removed or replaced in the future. */
-    public Element errorIndicatorElement;
+    private Element errorIndicatorElement;
 
     /** For internal use only. May be removed or replaced in the future. */
     public final Element captionElement = DOM.createSpan();
@@ -207,7 +209,7 @@ public class VButton extends FocusWidget implements ClickHandler {
                 clickPending = true;
                 setFocus(true);
                 DOM.setCapture(getElement());
-                isCapturing = isCapturingEnabled();
+                isCapturing = true;
                 addStyleName(CLASSNAME_PRESSED);
             }
             break;
@@ -225,7 +227,7 @@ public class VButton extends FocusWidget implements ClickHandler {
             break;
         case Event.ONMOUSEMOVE:
             clickPending = false;
-            if (isCapturing) {
+            if (isCapturing && !isDraggable()) {
                 // Prevent dragging (on other browsers);
                 DOM.eventPreventDefault(event);
             }
@@ -421,37 +423,21 @@ public class VButton extends FocusWidget implements ClickHandler {
     }
 
     /**
-     * Enables or disables the widget's capturing of mouse events with the mouse
-     * held down.
+     * Returns if this button has been made <code>draggable</code> or not.
      *
-     * @param enabled
-     *            {@literal true} if capturing enabled, {@literal false}
-     *            otherwise
-     *
-     * @since 8.1
-     */
-    public void setCapturingEnabled(boolean enabled) {
-        capturingEnabled = enabled;
-    }
-
-    /**
-     * Returns if the widget's capturing of mouse events are enabled.
-     *
-     * @return {@literal true} if mouse capturing is enabled, {@literal false}
+     * @return {@literal true} if draggable is enabled, {@literal false}
      *         otherwise
-     *
-     * @since 8.1
      */
-    public boolean isCapturingEnabled() {
-        return capturingEnabled;
+    private boolean isDraggable() {
+        return getElement().getPropertyBoolean("draggable");
     }
 
     private static native int getHorizontalBorderAndPaddingWidth(Element elem)
     /*-{
         // THIS METHOD IS ONLY USED FOR INTERNET EXPLORER, IT DOESN'T WORK WITH OTHERS
 
-    	var convertToPixel = function(elem, value) {
-    	    // From the awesome hack by Dean Edwards
+        var convertToPixel = function(elem, value) {
+            // From the awesome hack by Dean Edwards
             // http://erik.eae.net/archives/2007/07/27/18.54.15/#comment-102291
 
             // Remember the original values
@@ -467,20 +453,20 @@ public class VButton extends FocusWidget implements ClickHandler {
             elem.runtimeStyle.left = rsLeft;
 
             return ret;
-    	}
+        }
 
-     	var ret = 0;
+         var ret = 0;
 
         var sides = ["Right","Left"];
-        for(var i=0; i<2; i++) {
+        for (var i=0; i<2; i++) {
             var side = sides[i];
             var value;
             // Border -------------------------------------------------------
-            if(elem.currentStyle["border"+side+"Style"] != "none") {
+            if (elem.currentStyle["border"+side+"Style"] != "none") {
                 value = elem.currentStyle["border"+side+"Width"];
                 if ( !/^\d+(px)?$/i.test( value ) && /^\d/.test( value ) ) {
                     ret += convertToPixel(elem, value);
-                } else if(value.length > 2) {
+                } else if (value.length > 2) {
                     ret += parseInt(value.substr(0, value.length-2));
                 }
             }
@@ -489,12 +475,29 @@ public class VButton extends FocusWidget implements ClickHandler {
             value = elem.currentStyle["padding"+side];
             if ( !/^\d+(px)?$/i.test( value ) && /^\d/.test( value ) ) {
                 ret += convertToPixel(elem, value);
-            } else if(value.length > 2) {
+            } else if (value.length > 2) {
                 ret += parseInt(value.substr(0, value.length-2));
             }
         }
 
-    	return ret;
+        return ret;
     }-*/;
 
+    @Override
+    public Element getErrorIndicatorElement() {
+        return errorIndicatorElement;
+    }
+
+    @Override
+    public void setErrorIndicatorElementVisible(boolean visible) {
+        if (visible) {
+            if (errorIndicatorElement == null) {
+                errorIndicatorElement = ErrorUtil.createErrorIndicatorElement();
+                wrapper.insertFirst(errorIndicatorElement);
+            }
+        } else if (errorIndicatorElement != null) {
+            wrapper.removeChild(errorIndicatorElement);
+            errorIndicatorElement = null;
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -82,7 +82,7 @@ public class VSlider extends SimpleFocusablePanel
 
     /* DOM element for slider's base */
     private final Element base;
-    private final int BASE_BORDER_WIDTH = 1;
+    private static final int BASE_BORDER_WIDTH = 1;
 
     /* DOM element for slider's handle */
     private final Element handle;
@@ -287,10 +287,7 @@ public class VSlider extends SimpleFocusablePanel
             increaseValue(true);
         } else if (DOM.eventGetType(event) == Event.MOUSEEVENTS) {
             processBaseEvent(event);
-        } else if (BrowserInfo.get().isGecko()
-                && DOM.eventGetType(event) == Event.ONKEYPRESS
-                || !BrowserInfo.get().isGecko()
-                        && DOM.eventGetType(event) == Event.ONKEYDOWN) {
+        } else if (isNavigationEvent(event)) {
 
             if (handleNavigation(event.getKeyCode(), event.getCtrlKey(),
                     event.getShiftKey())) {
@@ -314,6 +311,14 @@ public class VSlider extends SimpleFocusablePanel
         if (WidgetUtil.isTouchEvent(event)) {
             event.preventDefault(); // avoid simulated events
             event.stopPropagation();
+        }
+    }
+
+    private boolean isNavigationEvent(Event event) {
+        if (BrowserInfo.get().isGecko() && BrowserInfo.get().getGeckoVersion() < 65) {
+            return DOM.eventGetType(event) == Event.ONKEYPRESS;
+        } else {
+            return DOM.eventGetType(event) == Event.ONKEYDOWN;
         }
     }
 
@@ -466,11 +471,15 @@ public class VSlider extends SimpleFocusablePanel
     }
 
     /**
-     * Handles the keyboard events handled by the Slider
+     * Handles the keyboard events handled by the Slider.
      *
-     * @param event
-     *            The keyboard event received
-     * @return true iff the navigation event was handled
+     * @param keycode
+     *            The key code received
+     * @param ctrl
+     *            Whether {@code CTRL} was pressed
+     * @param shift
+     *            Whether {@code SHIFT} was pressed
+     * @return true if the navigation event was handled
      */
     public boolean handleNavigation(int keycode, boolean ctrl, boolean shift) {
 

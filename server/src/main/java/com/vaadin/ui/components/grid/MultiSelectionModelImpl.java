@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2016 Vaadin Ltd.
+ * Copyright 2000-2018 Vaadin Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -29,6 +30,8 @@ import java.util.stream.Stream;
 
 import com.vaadin.data.provider.DataCommunicator;
 import com.vaadin.data.provider.DataProvider;
+import com.vaadin.data.provider.HierarchicalDataProvider;
+import com.vaadin.data.provider.HierarchicalQuery;
 import com.vaadin.data.provider.Query;
 import com.vaadin.event.selection.MultiSelectionEvent;
 import com.vaadin.event.selection.MultiSelectionListener;
@@ -143,8 +146,7 @@ public class MultiSelectionModelImpl<T> extends AbstractSelectionModel<T>
 
     @Override
     public boolean isSelected(T item) {
-        return isAllSelected()
-                || selectionContainsId(getGrid().getDataProvider().getId(item));
+        return selectionContainsId(getGrid().getDataProvider().getId(item));
     }
 
     /**
@@ -312,12 +314,67 @@ public class MultiSelectionModelImpl<T> extends AbstractSelectionModel<T>
             getState().allSelected = true;
         }
 
-        DataProvider<T, ?> dataSource = getGrid().getDataProvider();
+        Stream<T> allItemsStream;
+        DataProvider<T, ?> dataProvider = getGrid().getDataProvider();
         // this will fetch everything from backend
-        Stream<T> stream = dataSource.fetch(new Query<>());
+        if (dataProvider instanceof HierarchicalDataProvider) {
+            allItemsStream = fetchAllHierarchical(
+                    (HierarchicalDataProvider<T, ?>) dataProvider);
+        } else {
+            allItemsStream = fetchAll(dataProvider);
+        }
         LinkedHashSet<T> allItems = new LinkedHashSet<>();
-        stream.forEach(allItems::add);
+        allItemsStream.forEach(allItems::add);
         updateSelection(allItems, Collections.emptySet(), userOriginated);
+    }
+
+    /**
+     * Fetch all items from the given hierarchical data provider.
+     *
+     * @since 8.1
+     * @param dataProvider
+     *            the data provider to fetch from
+     * @return all items in the data provider
+     */
+    private Stream<T> fetchAllHierarchical(
+            HierarchicalDataProvider<T, ?> dataProvider) {
+        return fetchAllDescendants(null, dataProvider);
+    }
+
+    /**
+     * Fetch all the descendants of the given parent item from the given data
+     * provider.
+     *
+     * @since 8.1
+     * @param parent
+     *            the parent item to fetch descendants for
+     * @param dataProvider
+     *            the data provider to fetch from
+     * @return the stream of all descendant items
+     */
+    private Stream<T> fetchAllDescendants(T parent,
+            HierarchicalDataProvider<T, ?> dataProvider) {
+        List<T> children = dataProvider
+                .fetchChildren(new HierarchicalQuery<>(null, parent))
+                .collect(Collectors.toList());
+        if (children.isEmpty()) {
+            return Stream.empty();
+        }
+        return children.stream()
+                .flatMap(child -> Stream.concat(Stream.of(child),
+                        fetchAllDescendants(child, dataProvider)));
+    }
+
+    /**
+     * Fetch all items from the given data provider.
+     *
+     * @since 8.1
+     * @param dataProvider
+     *            the data provider to fetch from
+     * @return all items in this data provider
+     */
+    private Stream<T> fetchAll(DataProvider<T, ?> dataProvider) {
+        return dataProvider.fetch(new Query<>());
     }
 
     /**
@@ -372,12 +429,20 @@ public class MultiSelectionModelImpl<T> extends AbstractSelectionModel<T>
                     + " although user selection is disallowed");
         }
 
-        // if there are duplicates, some item is both added & removed, just
-        // discard that and leave things as was before
-        addedItems.removeIf(item -> removedItems.remove(item));
+        DataProvider<T, ?> dataProvider = getGrid().getDataProvider();
 
-        if (selection.containsAll(addedItems)
-                && Collections.disjoint(selection, removedItems)) {
+        addedItems.removeIf(item -> {
+            Object id = dataProvider.getId(item);
+            Optional<T> toRemove = removedItems.stream()
+                    .filter(i -> dataProvider.getId(i).equals(id)).findFirst();
+            toRemove.ifPresent(i -> removedItems.remove(i));
+            return toRemove.isPresent();
+        });
+
+        if (addedItems.stream().map(dataProvider::getId)
+                .allMatch(this::selectionContainsId)
+                && removedItems.stream().map(dataProvider::getId)
+                        .noneMatch(this::selectionContainsId)) {
             return;
         }
 
@@ -389,8 +454,13 @@ public class MultiSelectionModelImpl<T> extends AbstractSelectionModel<T>
 
         doUpdateSelection(set -> {
             // order of add / remove does not matter since no duplicates
-            set.removeAll(removedItems);
-            set.addAll(addedItems);
+            Set<Object> removedItemIds = removedItems.stream()
+                    .map(dataProvider::getId).collect(Collectors.toSet());
+            set.removeIf(
+                    item -> removedItemIds.contains(dataProvider.getId(item)));
+            addedItems.stream().filter(
+                    item -> !selectionContainsId(dataProvider.getId(item)))
+                    .forEach(set::add);
 
             // refresh method is NOOP for items that are not present client side
             DataCommunicator<T> dataCommunicator = getGrid()

@@ -2,14 +2,14 @@ package com.vaadin.tests.components.treegrid;
 
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Assume;
 import org.junit.Test;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.ui.ExpectedCondition;
 
 import com.vaadin.testbench.elements.TreeGridElement;
-import com.vaadin.tests.tb3.SingleBrowserTestPhantomJS2;
+import com.vaadin.testbench.parallel.BrowserUtil;
+import com.vaadin.tests.tb3.SingleBrowserTest;
 
-public class TreeGridCollapseExpandTest extends SingleBrowserTestPhantomJS2 {
+public class TreeGridCollapseExpandTest extends SingleBrowserTest {
 
     private TreeGridElement grid;
 
@@ -20,6 +20,9 @@ public class TreeGridCollapseExpandTest extends SingleBrowserTestPhantomJS2 {
 
     @Test
     public void no_race_condition_with_multiple_collapse_or_expand() {
+        Assume.assumeFalse("PhantomJS has issues with this test",
+                BrowserUtil.isPhantomJS(getDesiredCapabilities()));
+
         openTestURL();
         grid = $(TreeGridElement.class).first();
         testBench().disableWaitForVaadin();
@@ -52,11 +55,6 @@ public class TreeGridCollapseExpandTest extends SingleBrowserTestPhantomJS2 {
     }
 
     private void waitUntilRowCountEquals(int expectedCount) {
-        waitUntil(new ExpectedCondition<Boolean>() {
-            @Override
-            public Boolean apply(WebDriver input) {
-                return grid.getRowCount() == expectedCount;
-            }
-        });
+        waitUntil(input -> grid.getRowCount() == expectedCount);
     }
 }
